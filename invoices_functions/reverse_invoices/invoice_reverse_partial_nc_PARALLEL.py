@@ -1522,16 +1522,16 @@ def stamp_credit_note(models,db_name,uid,password, credit_note_id):
 
 if __name__ == "__main__":
     # Numero de workers = numero de funciones (para este script)
-    num_workers = 2
+    num_workers = 10
 
     # Crear un ThreadPoolExecutor con `num_workers` hilos
     with ThreadPoolExecutor(max_workers=num_workers) as executor:
         # Enviar las funciones al executor
         futures = [
-            #executor.submit(reverse_invoice_partial_ind_meli),
-            #executor.submit(reverse_invoice_partial_glob_meli),
-            executor.submit(reverse_invoice_partial_ind_amz),
-            executor.submit(reverse_invoice_partial_glob_amz)
+            executor.submit(reverse_invoice_partial_ind_meli),
+            executor.submit(reverse_invoice_partial_glob_meli),
+            #executor.submit(reverse_invoice_partial_ind_amz),
+            #executor.submit(reverse_invoice_partial_glob_amz)
         ]
 
         # Esperar a que todas las funciones terminen

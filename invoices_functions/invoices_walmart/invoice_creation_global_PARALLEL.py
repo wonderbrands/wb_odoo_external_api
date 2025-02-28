@@ -149,7 +149,7 @@ def invoice_create_global(excel_file_path, execution_number):
             'invoice_origin': ', '.join(sales_order_records),
             'invoice_line_ids': [],
             'team_id': 30, # Equipo de ventas Walmart
-            'invoice_date': '2024-11-30' # FECHA DE FACTURA manual si se ejecuta para mes anterior
+            #'invoice_date': '2024-11-30' # FECHA DE FACTURA manual si se ejecuta para mes anterior
         }
         # Consultamos a sale.order para obtener los campos requeridos de cada orden de venta
         for sale_order in sales_order_records:
@@ -351,16 +351,16 @@ if __name__ == "__main__":
 
     # ***********************************************
     # MES Y ANIO DE EJECUCION
-    month, year = prep.get_dates()
-    year_executed = str(year)
-    print('******************')
-    print(month, year)
-    print('******************')
+    # month, year = prep.get_dates()
+    # year_executed = str(year)
+    # print('******************')
+    # print(month, year)
+    # print('******************')
 
     # ----------------------------------------------------------------
     # Mes y año manual si se ejecuta en el mes posterior pero para efecto contable del mes anterior.
-    #month = "Noviembre"
-    #year_executed = "2024"
+    month = "Enero"
+    year_executed = "2025"
     # ----------------------------------------------------------------
 
     order_lines_in_invoice = 800 #Numero de lienas de orden de la factura, el limite esta al rededor de 1300 (comun = 999)

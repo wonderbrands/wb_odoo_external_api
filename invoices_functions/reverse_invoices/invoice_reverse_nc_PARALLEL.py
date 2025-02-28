@@ -1283,10 +1283,10 @@ if __name__ == "__main__":
     with ThreadPoolExecutor(max_workers=num_workers) as executor:
         # Enviar las funciones al executor
         futures = [
-            #executor.submit(reverse_invoice_meli),
-            #executor.submit(reverse_invoice_global_meli),
-            executor.submit(reverse_invoice_amazon),
-            executor.submit(reverse_invoice_global_amazon)
+            executor.submit(reverse_invoice_meli),
+            executor.submit(reverse_invoice_global_meli),
+            #executor.submit(reverse_invoice_amazon),
+            #executor.submit(reverse_invoice_global_amazon)
         ]
 
         # Esperar a que todas las funciones terminen
