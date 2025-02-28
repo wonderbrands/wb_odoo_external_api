@@ -3,3 +3,4 @@ config.json
 config_dev2.json
 Test/set666.py
 *.xlsx
+.DS_Store

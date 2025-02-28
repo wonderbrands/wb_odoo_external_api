@@ -48,6 +48,8 @@ print('Fecha:' + today_date.strftime("%Y-%m-%d %H:%M:%S"))
 #Archivo de configuración - Use config.json cuando los cambios vayan a producción
 
 # ***********************************************
+device ='mac' # mac, dell, rog
+# ***********************************************
 # ARCHIVO DE CONFIGURACIÓN
 config_file = 'config.json'
 
@@ -65,10 +67,18 @@ month_ = str(prep.get_month_number()) # Número del mes. Ejemplo para enero: '01
 #year_executed = "2024"
 # ----------------------------------------------------------------
 
-config_file_name = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Repos\wb_odoo_external_api\config\{config_file}'
+if device == 'dell':
+    config_file_name = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Repos\wb_odoo_external_api\config\{config_file}'
+    #PATH del archivo de ordenes conciliadas
+    orders_walmart_file_path = f'C:/Users/Sergio Gil Guerrero/Documents/WonderBrands/Finanzas/{year_executed}/{month_executed}/Walmart/autofacturacion.csv'
+elif device == 'mac':
+    config_file_name = f'/Users/sergio/Documents/Trabajo/WonderBrands/Repos/wb_odoo_external_api/config/{config_file}'
+    # PATH del archivo de ordenes conciliadas
+    orders_walmart_file_path = f'/Users/sergio/Documents/Trabajo/WonderBrands/Finanzas/{year_executed}/{month_executed}/Walmart/autofacturacion.csv'
+elif device == 'rog':
+    pass
 
-#PATH del archivo de ordenes conciliadas
-orders_walmart_file_path = 'C:/Users/Sergio Gil Guerrero/Documents/WonderBrands/Finanzas/{}/{}/Walmart/autofacturacion.csv'.format(year_executed,month_executed)
+
 
 def get_odoo_access():
     with open(config_file_name, 'r') as config_file:

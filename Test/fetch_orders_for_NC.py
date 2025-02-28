@@ -1,5 +1,5 @@
 import set666 as creds
-import MySQLdb
+import MySQLdb # mysqlclient
 import pandas as pd
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -92,6 +92,22 @@ def init_process(start_date,end_date):
     _start_date = _start_date.strftime('%Y-%m-%d')
     _end_date = _end_date.strftime('%Y-%m-%d')
 
+    if device == 'mac':
+        csv_path_ML_Totales = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{year}/{month}/Notas_de_credito_totales_ML.csv'
+        csv_path_ML_Parciales = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{year}/{month}/Notas_de_credito_parciales_ML.csv'
+        csv_path_AMZ_Totales = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{year}/{month}/Notas_de_credito_totales_AMAZON.csv'
+        csv_path_AMZ_Parciales = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{year}/{month}/Notas_de_credito_parciales_AMAZON.csv'
+
+    elif device == 'dell':
+        csv_path_ML_Totales = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{year}\{month}\Notas_de_credito_totales_ML.csv'
+        csv_path_ML_Parciales = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{year}\{month}\Notas_de_credito_parciales_ML.csv'
+        csv_path_AMZ_Totales = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{year}\{month}\Notas_de_credito_totales_AMAZON.csv'
+        csv_path_AMZ_Parciales = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{year}\{month}\Notas_de_credito_parciales_AMAZON.csv'
+
+    elif device == 'rog':
+        base_path = 'PENDIENTE'
+
+
 
     #print(_start_date_ML, _end_date_ML, _start_date, _end_date, _start_date_AMZ, _end_date_AMZ)
 
@@ -180,7 +196,6 @@ def init_process(start_date,end_date):
     """
 
     query_name = 'MERCADO-LIBRE TOTALES'
-    csv_path_ML_Totales = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{year}\{month}\Notas_de_credito_totales_ML.csv'
     fetch_data(query_name, query_template_ML_Totales, csv_path_ML_Totales)
 
     # MERCADO-LIBRE PARCIALES
@@ -367,7 +382,6 @@ def init_process(start_date,end_date):
     """
 
     query_name = 'MERCADO-LIBRE PARCIALES'
-    csv_path_ML_Parciales = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{year}\{month}\Notas_de_credito_parciales_ML.csv'
     fetch_data(query_name, query_template_ML_Parciales, csv_path_ML_Parciales)
 
     # AMAZON TOTALES
@@ -437,7 +451,6 @@ def init_process(start_date,end_date):
     """
 
     query_name = 'AMAZON TOTALES'
-    csv_path_AMZ_Totales = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{year}\{month}\Notas_de_credito_totales_AMAZON.csv'
     fetch_data(query_name, query_template_AMZ_Totales, csv_path_AMZ_Totales)
 
     # AMAZON PARCIALES
@@ -531,7 +544,6 @@ def init_process(start_date,end_date):
     """
 
     query_name = 'AMAZON PARCIALES'
-    csv_path_AMZ_Parciales = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{year}\{month}\Notas_de_credito_parciales_AMAZON.csv'
     fetch_data(query_name, query_template_AMZ_Parciales, csv_path_AMZ_Parciales)
 
     # Información del correo electrónico
@@ -560,11 +572,13 @@ def init_process(start_date,end_date):
     send_email_with_attachments(sender_email, sender_password, recipients, cc_recipients, subject, body, attachment_paths)
 
 if __name__ == '__main__':
-    prep.create_folders() # Se crean las carpetas a fecha de hoy para el proceso del cierre contable.
+    # Se crean las carpetas a fecha de hoy para el proceso del cierre contable.
+    device='mac' # mac, dell, rog
+    prep.create_folders(device=device)
     tm.sleep(2)
     # FECHAS   dia-mes-año
-    start_date = '27-12-2024'
-    end_date = '28-01-2025'
+    start_date = '29-01-2025'
+    end_date = '27-02-2025'
     # ************************************
 
     init_process(start_date,end_date)

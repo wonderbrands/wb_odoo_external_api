@@ -48,13 +48,27 @@ def get_dates():
 def get_month_number():
     return datetime.now().strftime('%m')
 @print_info
-def create_folders():
+def create_folders(device='dell'):  # mac, dell, rog
     dates_ = get_dates()
-    year_path = fr'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{dates_[1]}'
-    month_path = fr'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{dates_[1]}\{dates_[0]}'
-    conciled_path = fr'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{dates_[1]}\{dates_[0]}\Conciliadas'
-    walmart_path = fr'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{dates_[1]}\{dates_[0]}\Walmart'
-    xmls_path = fr'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{dates_[1]}\{dates_[0]}\Walmart\xmls_walmart'
+
+    if device == 'dell':
+        year_path = fr'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{dates_[1]}'
+        month_path = fr'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{dates_[1]}\{dates_[0]}'
+        conciled_path = fr'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{dates_[1]}\{dates_[0]}\Conciliadas'
+        walmart_path = fr'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{dates_[1]}\{dates_[0]}\Walmart'
+        xmls_path = fr'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{dates_[1]}\{dates_[0]}\Walmart\xmls_walmart'
+    elif device == 'mac':
+        year_path = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{dates_[1]}'
+        month_path = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{dates_[1]}/{dates_[0]}'
+        conciled_path = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{dates_[1]}/{dates_[0]}/Conciliadas'
+        walmart_path = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{dates_[1]}/{dates_[0]}/Walmart'
+        xmls_path = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{dates_[1]}/{dates_[0]}/Walmart/xmls_walmart'
+    elif device == 'rog': # PENDIENTE DE CAMBIO
+        year_path = fr'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{dates_[1]}'
+        month_path = fr'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{dates_[1]}\{dates_[0]}'
+        conciled_path = fr'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{dates_[1]}\{dates_[0]}\Conciliadas'
+        walmart_path = fr'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{dates_[1]}\{dates_[0]}\Walmart'
+        xmls_path = fr'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{dates_[1]}\{dates_[0]}\Walmart\xmls_walmart'
 
     create_folder(year_path)
     create_folder(month_path)

@@ -53,8 +53,6 @@ print('Fecha:' + today_date.strftime("%Y-%m-%d %H:%M:%S"))
 config_file = 'config.json'
 # ***********************************************
 
-config_file_name = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Repos\wb_odoo_external_api\config\{config_file}'
-
 def get_odoo_access():
     with open(config_file_name, 'r') as config_file:
         config = json.load(config_file)
@@ -349,18 +347,19 @@ if __name__ == "__main__":
     # y cuando terminen todos los hilos y todos los archivos, enviar un solo correo con los archivos adjuntos y
     # añadir el nombre de la ejecucion al archivo de salida.
 
+    device = 'mac' # mac, dell, rog
     # ***********************************************
     # MES Y ANIO DE EJECUCION
-    # month, year = prep.get_dates()
-    # year_executed = str(year)
-    # print('******************')
-    # print(month, year)
-    # print('******************')
+    month, year = prep.get_dates()
+    year_executed = str(year)
+    print('******************')
+    print(month, year)
+    print('******************')
 
     # ----------------------------------------------------------------
     # Mes y año manual si se ejecuta en el mes posterior pero para efecto contable del mes anterior.
-    month = "Enero"
-    year_executed = "2025"
+    #month = "Enero"
+    #year_executed = "2025"
     # ----------------------------------------------------------------
 
     order_lines_in_invoice = 800 #Numero de lienas de orden de la factura, el limite esta al rededor de 1300 (comun = 999)
@@ -368,9 +367,21 @@ if __name__ == "__main__":
 
     start_time = datetime.datetime.now()
 
-    excel_files_dir = f'C:/Users/Sergio Gil Guerrero/Documents/WonderBrands/Repos/wb_odoo_external_api/invoices_functions/files/invoices'
-    file_path_walmart = f'C:/Users/Sergio Gil Guerrero/Documents/WonderBrands/Finanzas/{year_executed}/{month}/Walmart/facturacion_global.csv'
 
+    if device == 'dell':
+        excel_files_dir = f'C:/Users/Sergio Gil Guerrero/Documents/WonderBrands/Repos/wb_odoo_external_api/invoices_functions/files/invoices'
+        file_path_walmart = f'C:/Users/Sergio Gil Guerrero/Documents/WonderBrands/Finanzas/{year_executed}/{month}/Walmart/facturacion_global.csv'
+
+        config_file_name = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Repos\wb_odoo_external_api\config\{config_file}'
+
+    elif device == 'mac':
+        excel_files_dir = f'/Users/sergio/Documents/Trabajo/WonderBrands/Repos/wb_odoo_external_api/invoices_functions/files/invoices'
+        file_path_walmart = f'/Users/sergio/Documents/Trabajo/WonderBrands/Finanzas/{year_executed}/{month}/Walmart/facturacion_global.csv'
+
+        config_file_name = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Repos/wb_odoo_external_api/config/{config_file}'
+
+    elif device == 'rog':
+        pass # PENDIENTES
     # Limpia la carpeta 'invoices' de los archivos antiguos
     e_o.delete_files(excel_files_dir)
 
