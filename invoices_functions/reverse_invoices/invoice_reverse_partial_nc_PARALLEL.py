@@ -58,8 +58,8 @@ l10n_mx_edi_payment_method_id = 3
 l10n_mx_edi_usage = 'G02'
 
 #FECHAS DEL PERIODO
-start_date_str = datetime.date(2024, 12, 27).strftime("%Y-%m-%d")
-end_date_str = datetime.date(2025, 1, 28).strftime("%Y-%m-%d")
+start_date_str = datetime.date(2025, 4, 27).strftime("%Y-%m-%d")
+end_date_str = datetime.date(2025, 5, 28).strftime("%Y-%m-%d")
 # ***********************************************
 
 month_executed, year_executed = prep.get_dates()
@@ -67,8 +67,9 @@ year_executed = str(year_executed)
 
 # ----------------------------------------------------------------
 # Mes y año manual
-# month_executed = 'Septiembre'
-# year_executed = '2024'
+# month_executed = 'Febrero'
+# # year_executed = '2024'
+# invoice_date = '2025-02-28'
 # ----------------------------------------------------------------
 
 
@@ -299,14 +300,19 @@ def reverse_invoice_partial_ind_meli():
                                 #Define los valores de la nota de crédito
                                 inv_int = int(inv_id)
                                 sale_int = int(sale_id)
+
+                                if 'invoice_date' not in globals():
+                                    invoice_date = datetime.datetime.now().strftime('%Y-%m-%d')
+
                                 refund_vals = {
                                     'ref': f'Reversión de: {inv_name}',
                                     'journal_id': inv_journal_id,
                                     'team_id': sale_team,
                                     'invoice_origin': sale_name,
                                     'payment_reference': inv_name,
-                                    'invoice_date': datetime.datetime.now().strftime('%Y-%m-%d'),
-                                    # Puedes ajustar la fecha según tus necesidades
+                                    # ----------------------------------------
+                                    'invoice_date': invoice_date,
+                                    # ----------------------------------------
                                     'partner_id': inv['partner_id'][0],
                                     'l10n_mx_edi_usage': inv_usage,
                                     'l10n_mx_edi_origin': inv_uuid_origin,
@@ -664,14 +670,19 @@ def reverse_invoice_partial_glob_meli():
                                 # Define los valores de la nota de crédito
                                 inv_int = int(inv_id)
                                 sale_int = int(sale_id)
+
+                                if 'invoice_date' not in globals():
+                                    invoice_date = datetime.datetime.now().strftime('%Y-%m-%d')
+
                                 refund_vals = {
                                     'ref': f'Reversión de: {inv_name}',
                                     'journal_id': inv_journal_id,
                                     'team_id': sale_team,
                                     'invoice_origin': sale_name,
                                     'payment_reference': inv_name,
-                                    'invoice_date': datetime.datetime.now().strftime('%Y-%m-%d'),
-                                    # Puedes ajustar la fecha según tus necesidades
+                                    # -------------------------------------
+                                    'invoice_date': invoice_date,
+                                    # -------------------------------------
                                     'partner_id': inv['partner_id'][0],
                                     'l10n_mx_edi_usage': inv_usage,
                                     'l10n_mx_edi_origin': inv_uuid_origin,
@@ -997,14 +1008,19 @@ def reverse_invoice_partial_ind_amz():
                                 # Define los valores de la nota de crédito
                                 inv_int = int(inv_id)
                                 sale_int = int(sale_id)
+
+                                if 'invoice_date' not in globals():
+                                    invoice_date = datetime.datetime.now().strftime('%Y-%m-%d')
+
                                 refund_vals = {
                                     'ref': f'Reversión de: {inv_name}',
                                     'journal_id': inv_journal_id,
                                     'team_id': sale_team,
                                     'invoice_origin': sale_name,
                                     'payment_reference': inv_name,
-                                    'invoice_date': datetime.datetime.now().strftime('%Y-%m-%d'),
-                                    # Puedes ajustar la fecha según tus necesidades
+                                    # -----------------------------------
+                                    'invoice_date': invoice_date,
+                                    # -----------------------------------
                                     'partner_id': inv['partner_id'][0],
                                     'l10n_mx_edi_usage': inv_usage,
                                     'l10n_mx_edi_origin': inv_uuid_origin,
@@ -1324,14 +1340,19 @@ def reverse_invoice_partial_glob_amz():
                                 # Define los valores de la nota de crédito
                                 inv_int = int(inv_id)
                                 sale_int = int(sale_id)
+
+                                if 'invoice_date' not in globals():
+                                    invoice_date = datetime.datetime.now().strftime('%Y-%m-%d')
+
                                 refund_vals = {
                                     'ref': f'Reversión de: {inv_name}',
                                     'journal_id': inv_journal_id,
                                     'team_id': sale_team,
                                     'invoice_origin': sale_name,
                                     'payment_reference': inv_name,
-                                    'invoice_date': datetime.datetime.now().strftime('%Y-%m-%d'),
-                                    # Puedes ajustar la fecha según tus necesidades
+                                    # ------------------------------------
+                                    'invoice_date': invoice_date,
+                                    # ------------------------------------
                                     'partner_id': inv['partner_id'][0],
                                     'l10n_mx_edi_usage': inv_usage,
                                     'l10n_mx_edi_origin': inv_uuid_origin,
@@ -1510,19 +1531,20 @@ def stamp_credit_note(models,db_name,uid,password, credit_note_id):
     # Timbrar la Nota de credito (certificar)
     # invoice_stamp = models.execute_kw(db_name, uid, password, 'account.move', 'action_l10n_mx_edi_invoice', [[invoice_id]])
     try:
-        print('----------------------------------------------------------------')
-        print('Timbrando nota de credito')
+        #print('----------------------------------------------------------------')
+        #print('Timbrando nota de credito')
         credit_note_stamp = models.execute_kw(db_name, uid, password, 'account.move', 'action_process_edi_web_services',
                                               [[credit_note_id]])
-        print(f"Nota de crédito timbrada: {credit_note_stamp}")
+        #print(f"Nota de crédito timbrada: {credit_note_stamp}")
     except Exception as e:
-        print('----------------------------------------------------------------')
-        print("Nota de credito timbrada")
-    print('----------------------------------------------------------------')
+        pass
+        #print('----------------------------------------------------------------')
+        #print("Nota de credito timbrada")
+    #print('----------------------------------------------------------------')
 
 if __name__ == "__main__":
     # Numero de workers = numero de funciones (para este script)
-    num_workers = 10
+    num_workers = 4
 
     # Crear un ThreadPoolExecutor con `num_workers` hilos
     with ThreadPoolExecutor(max_workers=num_workers) as executor:
@@ -1530,8 +1552,8 @@ if __name__ == "__main__":
         futures = [
             executor.submit(reverse_invoice_partial_ind_meli),
             executor.submit(reverse_invoice_partial_glob_meli),
-            #executor.submit(reverse_invoice_partial_ind_amz),
-            #executor.submit(reverse_invoice_partial_glob_amz)
+            executor.submit(reverse_invoice_partial_ind_amz),
+            executor.submit(reverse_invoice_partial_glob_amz)
         ]
 
         # Esperar a que todas las funciones terminen

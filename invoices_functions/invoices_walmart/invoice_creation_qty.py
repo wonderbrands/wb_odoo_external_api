@@ -60,17 +60,23 @@ year_executed = str(year_executed)
 # FECHAS PARA CARPETA DRIVE en str
 month_ = str(prep.get_month_number()) # Número del mes. Ejemplo para enero: '01'
 
+
 # ----------------------------------------------------------------
-# Mes y año manual si se ejecuta en el mes posterior pero para efecto contable del mes anterior.
-#month_executed = "Noviembre"
-#month_ = "11"
-#year_executed = "2024"
+### Mes y año manual si se ejecuta en el mes posterior pero para efecto contable del mes anterior.
+
+year_executed = '2025'
+month_executed = "Mayo"
+month_ = "05"
+invoice_date = '2025-05-31'
 # ----------------------------------------------------------------
 
 if device == 'dell':
     config_file_name = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Repos\wb_odoo_external_api\config\{config_file}'
     #PATH del archivo de ordenes conciliadas
     orders_walmart_file_path = f'C:/Users/Sergio Gil Guerrero/Documents/WonderBrands/Finanzas/{year_executed}/{month_executed}/Walmart/autofacturacion.csv'
+    # PATH de XMLs (susituimos estos archivos desde que nosotros tomamos los xmls en local)
+    invoices_folder = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{year_executed}\{month_executed}\Walmart\xmls_walmart'
+
 elif device == 'mac':
     config_file_name = f'/Users/sergio/Documents/Trabajo/WonderBrands/Repos/wb_odoo_external_api/config/{config_file}'
     # PATH del archivo de ordenes conciliadas
@@ -78,7 +84,12 @@ elif device == 'mac':
 elif device == 'rog':
     pass
 
+print('******************')
+print(month_executed, year_executed)
+print('******************')
 
+
+print(f'Carpeta: {month_}, Mes: {month_executed}, Año: {year_executed}')
 
 def get_odoo_access():
     with open(config_file_name, 'r') as config_file:
@@ -134,15 +145,15 @@ def invoice_create_qty():
     mycursor = mydb.cursor()
     print('Este proceso tomará algo de tiempo, le recomendamos ir por un café')
     print('----------------------------------------------------------------')
-    mycursor.execute("""select b.name, a.uuid, a.fecha
-                        from finance.sr_sat_emitidas a
-                        left join somos_reyes.odoo_new_sale_order b
-                        on a.folio = b.channel_order_reference
-                        WHERE extract(year_month from a.fecha) = %s
-                            and b.channel like '%walmart%' 
-                            and b.team_name like '%walmart%'
-                            and b.state not in ('draft','sent','cancel')
-                            and a.folio in ({})
+    mycursor.execute("""SELECT b.name, a.uuid, a.fecha
+                        FROM finance.sr_sat_emitidas a
+                        LEFT JOIN somos_reyes.odoo_new_sale_order b
+                        ON a.folio LIKE CONCAT(CAST(b.channel_order_reference AS CHAR), '%')
+                        WHERE EXTRACT(YEAR_MONTH FROM a.fecha) = %s
+                          AND b.channel LIKE '%walmart%' 
+                          AND b.team_name LIKE '%walmart%'
+                          AND b.state NOT IN ('draft','sent','cancel')
+                          AND b.channel_order_reference IN  ({})
                         group by a.uuid
                         order by a.fecha
                         """.format(placeholders), tuple(date_list_param + marketplace_refs_list))
@@ -221,29 +232,53 @@ def invoice_create_qty():
                             if qty_delivered != 0:
                                 # Inicia un ciclo para cada item en la columna qty_delivered
                                 for qty in range(qty_delivered):
-                                    invoice = {
-                                        'ref': '',
-                                        'move_type': 'out_invoice',
-                                        'currency_id': currency_id,
-                                        'narration': narration,
-                                        'campaign_id': campaign_id,
-                                        'medium_id': medium_id,
-                                        'source_id': source_id,
-                                        'user_id': user_id,
-                                        'invoice_user_id': invoice_user_id,
-                                        'team_id': team_id,
-                                        'partner_id': partner_id,
-                                        'partner_shipping_id': partner_shipping_id,
-                                        'fiscal_position_id': fiscal_position_id,
-                                        'partner_bank_id': partner_bank_id,
-                                        'journal_id': journal_id,  # company comes from the journal
-                                        'invoice_origin': invoice_origin,
-                                        'invoice_payment_term_id': invoice_payment_term_id,
-                                        'payment_reference': payment_reference,
-                                        'transaction_ids': [(6, 0, transaction_ids)],
-                                        'invoice_line_ids': [],
-                                        'invoice_date': '2024-11-30' # FECHA DE FACTURA manual si se ejecuta para mes anterior
-                                    }
+                                    if 'invoice_date' in globals():
+                                        invoice = {
+                                            'ref': '',
+                                            'move_type': 'out_invoice',
+                                            'currency_id': currency_id,
+                                            'narration': narration,
+                                            'campaign_id': campaign_id,
+                                            'medium_id': medium_id,
+                                            'source_id': source_id,
+                                            'user_id': user_id,
+                                            'invoice_user_id': invoice_user_id,
+                                            'team_id': team_id,
+                                            'partner_id': partner_id,
+                                            'partner_shipping_id': partner_shipping_id,
+                                            'fiscal_position_id': fiscal_position_id,
+                                            'partner_bank_id': partner_bank_id,
+                                            'journal_id': journal_id,  # company comes from the journal
+                                            'invoice_origin': invoice_origin,
+                                            'invoice_payment_term_id': invoice_payment_term_id,
+                                            'payment_reference': payment_reference,
+                                            'transaction_ids': [(6, 0, transaction_ids)],
+                                            'invoice_line_ids': [],
+                                            'invoice_date': invoice_date # FECHA DE FACTURA manual si se ejecuta para mes anterior
+                                        }
+                                    else:
+                                        invoice = {
+                                            'ref': '',
+                                            'move_type': 'out_invoice',
+                                            'currency_id': currency_id,
+                                            'narration': narration,
+                                            'campaign_id': campaign_id,
+                                            'medium_id': medium_id,
+                                            'source_id': source_id,
+                                            'user_id': user_id,
+                                            'invoice_user_id': invoice_user_id,
+                                            'team_id': team_id,
+                                            'partner_id': partner_id,
+                                            'partner_shipping_id': partner_shipping_id,
+                                            'fiscal_position_id': fiscal_position_id,
+                                            'partner_bank_id': partner_bank_id,
+                                            'journal_id': journal_id,  # company comes from the journal
+                                            'invoice_origin': invoice_origin,
+                                            'invoice_payment_term_id': invoice_payment_term_id,
+                                            'payment_reference': payment_reference,
+                                            'transaction_ids': [(6, 0, transaction_ids)],
+                                            'invoice_line_ids': []
+                                        }
                                     line_id = inv_lines['id']
                                     invoice_lines = {'display_type': inv_lines['display_type'],
                                                      'sequence': inv_lines['sequence'],
@@ -279,7 +314,9 @@ def invoice_create_qty():
                                         file_name = xml_files[value_position] #utliza la posición que asignamos anteriormente
                                         file_date = xml_files[value_position_date] #utliza la posición que asignamos anteriormente
                                         file_name_mayus = file_name.upper() #Pone en mayúsculas el nombre del XML
-                                        invoices_folder = 'G:/.shortcut-targets-by-id/1vsZk0-0Cd1FnEKNQlXzq3EuSgg6ZRgtP/{}/{}'.format(year_executed,year_executed+month_) #carpeta en la que se encuentran los xmls
+                                        #invoices_folder = 'G:/.shortcut-targets-by-id/1vsZk0-0Cd1FnEKNQlXzq3EuSgg6ZRgtP/{}/{}'.format(year_executed,year_executed+month_) #carpeta en la que se encuentran los xmls
+                                        #invoices_folder = 'G:/My Drive/Compartido/{}/{}'.format(year_executed,year_executed+month_)
+                                        #invoices_folder = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{year_executed}\{month_executed}\Walmart\xmls_walmart'
                                         xml_file = file_name + '.xml'
                                         xml_file_path = os.path.join(invoices_folder, xml_file)
                                         with open(xml_file_path, 'rb') as f:
@@ -369,30 +406,55 @@ def invoice_create_qty():
                                 print("Se encontró una factura con cantidad entregada en 0, se tomará en cuenta solo la cantidad")
                                 #Inicia un ciclo para cada item en la columna qty_uom
                                 for qty in range(qty_uom):
-                                    invoice = {
-                                        'ref': '',
-                                        'move_type': 'out_invoice',
-                                        'currency_id': currency_id,
-                                        'narration': narration,
-                                        'campaign_id': campaign_id,
-                                        'medium_id': medium_id,
-                                        'source_id': source_id,
-                                        'user_id': user_id,
-                                        'invoice_user_id': invoice_user_id,
-                                        'team_id': team_id,
-                                        'partner_id': partner_id,
-                                        'partner_shipping_id': partner_shipping_id,
-                                        'fiscal_position_id': fiscal_position_id,
-                                        'partner_bank_id': partner_bank_id,
-                                        'journal_id': journal_id,  # company comes from the journal
-                                        'invoice_origin': invoice_origin,
-                                        'invoice_payment_term_id': invoice_payment_term_id,
-                                        'payment_reference': payment_reference,
-                                        'transaction_ids': [(6, 0, transaction_ids)],
-                                        'invoice_line_ids': [],
-                                        'company_id': company_id,
-                                        'invoice_date': '2024-11-30' # FECHA DE FACTURA manual si se ejecuta para mes anterior
-                                    }
+                                    if 'invoice_date' in globals():
+                                        invoice = {
+                                            'ref': '',
+                                            'move_type': 'out_invoice',
+                                            'currency_id': currency_id,
+                                            'narration': narration,
+                                            'campaign_id': campaign_id,
+                                            'medium_id': medium_id,
+                                            'source_id': source_id,
+                                            'user_id': user_id,
+                                            'invoice_user_id': invoice_user_id,
+                                            'team_id': team_id,
+                                            'partner_id': partner_id,
+                                            'partner_shipping_id': partner_shipping_id,
+                                            'fiscal_position_id': fiscal_position_id,
+                                            'partner_bank_id': partner_bank_id,
+                                            'journal_id': journal_id,  # company comes from the journal
+                                            'invoice_origin': invoice_origin,
+                                            'invoice_payment_term_id': invoice_payment_term_id,
+                                            'payment_reference': payment_reference,
+                                            'transaction_ids': [(6, 0, transaction_ids)],
+                                            'invoice_line_ids': [],
+                                            'company_id': company_id,
+                                            'invoice_date': invoice_date # FECHA DE FACTURA manual si se ejecuta para mes anterior
+                                        }
+                                    else:
+                                        invoice = {
+                                            'ref': '',
+                                            'move_type': 'out_invoice',
+                                            'currency_id': currency_id,
+                                            'narration': narration,
+                                            'campaign_id': campaign_id,
+                                            'medium_id': medium_id,
+                                            'source_id': source_id,
+                                            'user_id': user_id,
+                                            'invoice_user_id': invoice_user_id,
+                                            'team_id': team_id,
+                                            'partner_id': partner_id,
+                                            'partner_shipping_id': partner_shipping_id,
+                                            'fiscal_position_id': fiscal_position_id,
+                                            'partner_bank_id': partner_bank_id,
+                                            'journal_id': journal_id,  # company comes from the journal
+                                            'invoice_origin': invoice_origin,
+                                            'invoice_payment_term_id': invoice_payment_term_id,
+                                            'payment_reference': payment_reference,
+                                            'transaction_ids': [(6, 0, transaction_ids)],
+                                            'invoice_line_ids': [],
+                                            'company_id': company_id
+                                        }
                                     # line_id = sale_order_line[0]['id']
                                     line_id = inv_lines['id']
                                     invoice_lines = {'display_type': inv_lines['display_type'],
@@ -426,7 +488,9 @@ def invoice_create_qty():
                                         file_name = xml_files[value_position]
                                         file_date = xml_files[value_position_date]
                                         file_name_mayus = file_name.upper()
-                                        invoices_folder = 'G:/.shortcut-targets-by-id/1vsZk0-0Cd1FnEKNQlXzq3EuSgg6ZRgtP/{}/{}'.format(year_executed,year_executed+month_) #carpeta en la que se encuentran los xmls
+                                        #invoices_folder = 'G:/.shortcut-targets-by-id/1vsZk0-0Cd1FnEKNQlXzq3EuSgg6ZRgtP/{}/{}'.format(year_executed,year_executed+month_) #carpeta en la que se encuentran los xmls
+                                        #invoices_folder = 'G:/My Drive/Compartido/{}/{}'.format(year_executed,year_executed+month_)
+                                        #invoices_folder = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{year_executed}\{month_executed}\Walmart\xmls_walmart'
                                         xml_file = file_name + '.xml'
                                         xml_file_path = os.path.join(invoices_folder, xml_file)
                                         with open(xml_file_path, 'rb') as f:

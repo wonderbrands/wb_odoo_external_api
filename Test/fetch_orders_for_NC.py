@@ -553,7 +553,7 @@ def init_process(start_date,end_date):
     cc_recipients = ['rosalba@wonderbrands.co', 'greta@somos-reyes.com', 'alex@wonderbrands.co', 'will@wonderbrands.co', 'eric@wonderbrands.co']
     #recipients = ['sergio@wonderbrands.co','sergiogil.fiein@gmail.com','lili.men.mor11@gmail.com']
     #cc_recipients = ['sergio.gil.guerrero.garcia@gmail.com']
-    subject = f'*Notas de Crédito a generar del {start_date} al {end_date} V2*'
+    subject = f'*Notas de Crédito a generar del {start_date} al {end_date}*'
     body = '''\
     <html>
       <head></head>
@@ -573,12 +573,14 @@ def init_process(start_date,end_date):
 
 if __name__ == '__main__':
     # Se crean las carpetas a fecha de hoy para el proceso del cierre contable.
-    device='mac' # mac, dell, rog
+    device='dell' # mac, dell, rog
     prep.create_folders(device=device)
     tm.sleep(2)
     # FECHAS   dia-mes-año
-    start_date = '29-01-2025'
-    end_date = '27-02-2025'
+
+    start_date = '28-04-2025'
+    end_date = '28-05-2025'
+
     # ************************************
 
     init_process(start_date,end_date)

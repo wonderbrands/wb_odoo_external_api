@@ -58,8 +58,8 @@ l10n_mx_edi_payment_method_id = 3
 l10n_mx_edi_usage = 'G02'
 
 #FECHAS DEL PERIODO ***********************************************
-start_date_str = datetime.date(2024, 12, 27).strftime("%Y-%m-%d")
-end_date_str = datetime.date(2025, 1, 28).strftime("%Y-%m-%d")
+start_date_str = datetime.date(2025, 4, 27).strftime("%Y-%m-%d")
+end_date_str = datetime.date(2025, 5, 28).strftime("%Y-%m-%d")
 # ***********************************************
 
 month_executed, year_executed = prep.get_dates()
@@ -67,8 +67,9 @@ year_executed = str(year_executed)
 
 # ----------------------------------------------------------------
 # Mes y año manual
-# month_executed = 'Septiembre'
-# year_executed = '2024'
+# month_executed = 'Febrero'
+# year_executed = '2025'
+# invoice_date = '2025-02-28'
 # ----------------------------------------------------------------
 
 
@@ -232,13 +233,17 @@ def reverse_invoice_meli(): #NOTAS DE CRÉDITO INDIVIDUALES MELI
                         l10n_mx_edi_origin = '03|' + str(inv_uuid)
                         team_id = inv['team_id'][0]
 
+                        if 'invoice_date' not in globals():
+                            invoice_date = datetime.datetime.now().strftime('%Y-%m-%d')
+
                         if inv_state == 'posted':
                             #Se hace una llamada al wizard de creación de notas de crédito
                             credit_note_wizard = models.execute_kw(db_name, uid, password, 'account.move.reversal', 'create',
                                                                    [{
                                 'refund_method': 'refund',
                                 'reason': 'Por efectos de devolución o retorno de una orden',
-                                'journal_id': inv_journal_id, }],
+                                'journal_id': inv_journal_id,
+                                'date': invoice_date,}], # VERIFICAR QUE ESTO FUNCIONE
                                            {'context': {
                                                'active_ids': [inv_id],
                                                'active_id': inv_id,
@@ -523,14 +528,19 @@ def reverse_invoice_global_meli():
                                 #Define los valores de la nota de crédito
                                 inv_int = int(inv_id)
                                 sale_int = int(sale_id)
+
+                                if 'invoice_date' not in globals():
+                                    invoice_date = datetime.datetime.now().strftime('%Y-%m-%d')
+
                                 refund_vals = {
                                     'ref': f'Reversión de: {inv_name}',
                                     'journal_id': inv_journal_id,
                                     'team_id': sale_team,
                                     'invoice_origin': sale_name,
                                     'payment_reference': inv_name,
-                                    'invoice_date': datetime.datetime.now().strftime('%Y-%m-%d'),
-                                    # Puedes ajustar la fecha según tus necesidades
+                                    # --------------------------------------------
+                                    'invoice_date': invoice_date,
+                                    # --------------------------------------------
                                     'partner_id': inv['partner_id'][0],
                                     'l10n_mx_edi_usage': inv_usage,
                                     'l10n_mx_edi_origin': inv_uuid_origin,
@@ -813,12 +823,17 @@ def reverse_invoice_amazon():
                         inv_journal_id = inv['journal_id'][0] #Diario de la factura
                         l10n_mx_edi_origin = '03|' + str(inv_uuid)
                         team_id = inv['team_id'][0]
+
+                        if 'invoice_date' not in globals():
+                            invoice_date = datetime.datetime.now().strftime('%Y-%m-%d')
+
                         #Se hace una llamada al wizard de creación de notas de crédito
                         credit_note_wizard = models.execute_kw(db_name, uid, password, 'account.move.reversal', 'create',
                                                                [{
                             'refund_method': 'refund',
                             'reason': 'Por efectos de devolución o retorno de una orden',
-                            'journal_id': inv_journal_id, }],
+                            'journal_id': inv_journal_id,
+                            'date': invoice_date,}], # VERIFICAR QUE ESTO FUNCIONE
                                        {'context': {
                                            'active_ids': [inv_id],
                                            'active_id': inv_id,
@@ -1086,14 +1101,19 @@ def reverse_invoice_global_amazon():
                             #Define los valores de la nota de crédito
                             inv_int = int(inv_id)
                             sale_int = int(sale_id)
+
+                            if 'invoice_date' not in globals():
+                                invoice_date = datetime.datetime.now().strftime('%Y-%m-%d')
+
                             refund_vals = {
                                 'ref': f'Reversión de: {inv_name}',
                                 'journal_id': inv_journal_id,
                                 'invoice_origin': sale_name,
                                 'team_id': sale_team,
                                 'payment_reference': inv_name,
-                                'invoice_date': datetime.datetime.now().strftime('%Y-%m-%d'),
-                                # Puedes ajustar la fecha según tus necesidades
+                                # --------------------------------------
+                                'invoice_date': invoice_date,
+                                # --------------------------------------
                                 'partner_id': inv['partner_id'][0],
                                 'l10n_mx_edi_usage': l10n_mx_edi_usage,
                                 'l10n_mx_edi_origin': inv_uuid_origin,
@@ -1263,21 +1283,22 @@ def stamp_credit_note(models,db_name,uid,password, credit_note_id):
     # Timbrar la Nota de credito (certificar)
     # invoice_stamp = models.execute_kw(db_name, uid, password, 'account.move', 'action_l10n_mx_edi_invoice', [[invoice_id]])
     try:
-        print('----------------------------------------------------------------')
-        print('Timbrando nota de credito')
+        #print('----------------------------------------------------------------')
+        #print('Timbrando nota de credito')
         credit_note_stamp = models.execute_kw(db_name, uid, password, 'account.move', 'action_process_edi_web_services',
                                               [[credit_note_id]])
-        print(f"Nota de crédito timbrada: {credit_note_stamp}")
+        #print(f"Nota de crédito timbrada: {credit_note_stamp}")
     except Exception as e:
-        print('----------------------------------------------------------------')
-        print("Nota de credito timbrada")
-    print('----------------------------------------------------------------')
+        pass
+        #print('----------------------------------------------------------------')
+        #print("Nota de credito timbrada")
+    #print('----------------------------------------------------------------')
 
 
 
 if __name__ == "__main__":
     # Numero de workers = numero de funciones (para este script)
-    num_workers = 2
+    num_workers = 4
 
     # Crear un ThreadPoolExecutor con `num_workers` hilos
     with ThreadPoolExecutor(max_workers=num_workers) as executor:
@@ -1285,8 +1306,8 @@ if __name__ == "__main__":
         futures = [
             executor.submit(reverse_invoice_meli),
             executor.submit(reverse_invoice_global_meli),
-            #executor.submit(reverse_invoice_amazon),
-            #executor.submit(reverse_invoice_global_amazon)
+            executor.submit(reverse_invoice_amazon),
+            executor.submit(reverse_invoice_global_amazon)
         ]
 
         # Esperar a que todas las funciones terminen

@@ -52,26 +52,25 @@ print('Insert downloaded items in db.')
 print(time.time() - start_time)
 print('')
 
-yday = 20240000
-dbfore = 20240001
+yday = 20250401
+dbfore = 20250430
 search_date = yday
 
 # ******************
 # MES DE EJECUCIÓN
-# year = '2024'
-# month = 'Septiembre'
 month, year = prep.get_dates()
 year = str(year)
-print('******************')
-print(month, year)
-print('******************')
 # ******************
 
 # ----------------------------------------------------------------
-# Mes y año manual si se ejecuta en el mes posterior pero para efecto contable del mes anterior.
-#month = "Noviembre"
-#year = "2024"
+### Mes y año manual si se ejecuta en el mes posterior pero para efecto contable del mes anterior.
+month = "Mayo"
+year = "2025"
 # ----------------------------------------------------------------
+
+print('******************')
+print(month, year)
+print('******************')
 
 # REVISAR QUE EXISTA LA RUTA DE LOS XML'S !!!
 os.chdir(f'C:/Users/Sergio Gil Guerrero/Documents/WonderBrands/Finanzas/{year}/{month}/Walmart/xmls_walmart')
