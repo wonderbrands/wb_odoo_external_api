@@ -48,7 +48,7 @@ print('Fecha:' + today_date.strftime("%Y-%m-%d %H:%M:%S"))
 #Archivo de configuración - Use config.json cuando los cambios vayan a producción
 
 # ***********************************************
-device ='mac' # mac, dell, rog
+device ='dell' # mac, dell, rog
 # ***********************************************
 # ARCHIVO DE CONFIGURACIÓN
 config_file = 'config.json'
@@ -62,12 +62,12 @@ month_ = str(prep.get_month_number()) # Número del mes. Ejemplo para enero: '01
 
 
 # ----------------------------------------------------------------
-### Mes y año manual si se ejecuta en el mes posterior pero para efecto contable del mes anterior.
+### Mes y año MANUAL si se ejecuta en el mes posterior pero para efecto contable del mes anterior.
 
 year_executed = '2025'
-month_executed = "Mayo"
-month_ = "05"
-invoice_date = '2025-05-31'
+month_executed = "Julio"
+month_ = "07"
+invoice_date = '2025-07-31'
 # ----------------------------------------------------------------
 
 if device == 'dell':
@@ -603,7 +603,7 @@ def invoice_create_qty():
     <html>
       <head></head>
       <body>
-        <p>Buenas tardes</p>
+        <p>Buen día</p>
         <p>Hola a todos, espero que estén muy bien. Les comento que acabamos de correr el script de autofacturación Walmart.</p>
         <p>Adjunto encontrarán el archivo generado por el script en el cual se encuentran las órdenes a las cuales se les creó una factura, órdenes que no se pudieron facturar, nombre de las facturas creadas y su ids correspondientes.</p>
         </br>
@@ -669,7 +669,6 @@ def invoice_create_qty():
     smtp_server = 'smtp.gmail.com'
     smtp_port = 587
     smtp_username = 'sergio@wonderbrands.co'
-    smtp_password = 'lwbwgygovuhcyjnk'
     print('Enviando correo con listas de ordenes y facturas')
     print('----------------------------------------------------------------')
     try:

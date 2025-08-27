@@ -58,8 +58,8 @@ l10n_mx_edi_payment_method_id = 3
 l10n_mx_edi_usage = 'G02'
 
 #FECHAS DEL PERIODO ***********************************************
-start_date_str = datetime.date(2025, 4, 27).strftime("%Y-%m-%d")
-end_date_str = datetime.date(2025, 5, 28).strftime("%Y-%m-%d")
+start_date_str = datetime.date(2025, 6, 26).strftime("%Y-%m-%d")
+end_date_str = datetime.date(2025, 7, 27).strftime("%Y-%m-%d")
 # ***********************************************
 
 month_executed, year_executed = prep.get_dates()
@@ -99,11 +99,11 @@ def get_email_access():
 
 def current_execution(func):
     def wrapper(*args, **kwargs):
-        print('\n \n ******************************************************')
+        print('\n******************************************************')
         print(f"Ejecutando {func.__name__}")
         result = func(*args, **kwargs)
         print(f"{func.__name__} terminada")
-        print('****************************************************** \n \n')
+        print('****************************************************** \n')
         return result
     return wrapper
 
@@ -1249,7 +1249,7 @@ def reverse_invoice_global_amazon():
         msg['To'] = ', '.join(
             ['carlos.hinojosa@wonderbrands.co', 'sergio@wonderbrands.co', 'eric@wonderbrands.co', 'rosalba@wonderbrands.co',
              'greta@somos-reyes.com',
-             'contabilidad@somos-reyes.com', 'alex@wonderbrands.co', 'will@wonderbrands.co'])
+             'contabilidad@somos-reyes.com', 'alex@wonderbrands.co', 'will@wonderbrands.co', 'sebastian@wonderbrands.co'])
         msg['Subject'] = 'Script Automático Amazon - Creación de notas de crédito para facturas globales'
         # Adjuntar el cuerpo del correo
         msg.attach(MIMEText(body, 'html'))

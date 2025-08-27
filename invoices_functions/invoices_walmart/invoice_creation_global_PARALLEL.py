@@ -240,7 +240,7 @@ def invoice_create_global(excel_file_path, execution_number):
     <html>
       <head></head>
       <body>
-        <p>Buenas noches</p>
+        <p>Buena día</p>
         <p>Hola a todos, espero que estén muy bien. Les comento que acabamos de correr el script para creación de facturas 
         globales de Walmart.</p>
         <p>Adjunto encontrarán el archivo generado por el script en el cual se encuentran las órdenes que se agregaron a la 
@@ -286,7 +286,7 @@ def invoice_create_global(excel_file_path, execution_number):
     print('----------------------------------------------------------------')
     msg = MIMEMultipart()
     msg['From'] = 'sergio@wonderbrands.co'
-    msg['To'] = ', '.join(['sergio@wonderbrands.co''eric@wonderbrands.co','rosalba@wonderbrands.co','carlos.hinojosa@wonderbrands.co','greta@somos-reyes.com','contabilidad@somos-reyes.com','alex@wonderbrands.co','will@wonderbrands.co'])
+    msg['To'] = ', '.join(['sergio@wonderbrands.co','eric@wonderbrands.co','rosalba@wonderbrands.co','carlos.hinojosa@wonderbrands.co','greta@somos-reyes.com','contabilidad@somos-reyes.com','alex@wonderbrands.co','will@wonderbrands.co'])
     msg['Subject'] = 'Resultados de facturas Walmart'
     # Adjuntar el cuerpo del correo
     msg.attach(MIMEText(body, 'html'))
@@ -301,14 +301,13 @@ def invoice_create_global(excel_file_path, execution_number):
     smtp_server = 'smtp.gmail.com'
     smtp_port = 587
     smtp_username = 'sergio@wonderbrands.co'
-    smtp_password = 'lwbwgygovuhcyjnk'
     print('Enviando correo con listas de ordenes y factura')
     print('----------------------------------------------------------------')
     try:
        smtpObj = smtplib.SMTP(smtp_server, smtp_port)
        smtpObj.starttls()
        smtpObj.login(smtp_username, smtp_password)
-       smtpObj.sendmail(smtp_username, msg['To'], msg.as_string())
+       # smtpObj.sendmail(smtp_username, msg['To'], msg.as_string())
        smtpObj.send_message(msg)
        print("Correo enviado correctamente")
     except Exception as e:
@@ -366,10 +365,10 @@ if __name__ == "__main__":
     year_executed = str(year)
 
     # ----------------------------------------------------------------
-    ### Mes y año manual si se ejecuta en el mes posterior pero para efecto contable del mes anterior.
-    month = "Mayo"
+    ### Mes y año MANUAL si se ejecuta en el mes posterior pero para efecto contable del mes anterior.
+    month = "Julio"
     year_executed = "2025"
-    invoice_date = '2025-05-31'
+    invoice_date = '2025-07-31'
     # ----------------------------------------------------------------
 
     print('******************')

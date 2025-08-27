@@ -1,39 +1,25 @@
-import set666 as creds
 import MySQLdb # mysqlclient
-import pandas as pd
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
-from email import encoders
-import base64
-import os
+import set666 as creds
 from datetime import datetime
-import time as tm
-import prepare_folders as prep
+import pandas as pd
 
 __description__ = """
         Este script obtiene los resultados de las queries de Mercado Libre y Amazon tanto totales como parciales (Individuales y Globales),
-        los guarda en documentos CSV y los envía en un correo automático.  
-        
+        los guarda en documentos CSV. 
+
         La información que se obtiene son las órdenes que generan reembolsos (notas de crédito) que deben ser cotejadas por el qeuipo de finanzas.
-        
+
         Se deben modificar los parámetros de fechas de inicio y fin (start_date y end_date), el anio y el mes.
 """
 
+
 def fetch_data(query_name, query_template, csv_path):
     try:
-        # Conexión a la base de datos
         connection = MySQLdb.connect(creds.wbh, creds.wbu, creds.wbp, 'somos_reyes', local_infile=True)
         print('\n', 'Conexión iniciada para Query: ', query_name)
 
-        # Insertar las fechas en la consulta
         query = query_template
-
-        # Ejecutar la consulta
         data_frame = pd.read_sql(query, connection)
-
-        # Guardar los resultados en un archivo CSV
         data_frame.to_csv(csv_path, index=False)
         print(f"Consulta ejecutada y resultados guardados en '{csv_path}'")
 
@@ -45,46 +31,8 @@ def fetch_data(query_name, query_template, csv_path):
             connection.close()
             print("Conexión cerrada")
 
-def send_email_with_attachments(sender_email, sender_password, to_recipients, cc_recipients, subject, body, attachment_paths):
-    # Crear el mensaje de correo electrónico
-    msg = MIMEMultipart()
-    msg['From'] = sender_email
-    msg['To'] = ', '.join(to_recipients)
-    msg['Subject'] = subject
 
-    # Agregar destinatarios en copia (CC) si los hay
-    if cc_recipients:
-        msg['Cc'] = ', '.join(cc_recipients)
-
-    # Adjuntar el cuerpo del correo
-    msg.attach(MIMEText(body, 'html'))
-
-    # Adjuntar los archivos CSV al mensaje
-    for attachment_path in attachment_paths:
-        with open(attachment_path, 'rb') as file:
-            attachment = MIMEBase('application', 'octet-stream')
-            attachment.set_payload(file.read())
-            encoders.encode_base64(attachment)
-            attachment.add_header('Content-Disposition', f'attachment; filename={os.path.basename(attachment_path)}')
-            msg.attach(attachment)
-
-    # Enviar el correo electrónico
-    try:
-        smtp_obj = smtplib.SMTP('smtp.gmail.com', 587)
-        smtp_obj.starttls()
-        smtp_obj.login(sender_email, sender_password)
-        recipients = to_recipients + cc_recipients
-        #smtp_obj.sendmail(sender_email, recipients, msg.as_string())
-        smtp_obj.send_message(msg)
-        smtp_obj.quit()
-        print("Correo enviado correctamente")
-    except Exception as e:
-        print(f"Error: no se pudo enviar el correo: {e}")
-
-def init_process(start_date,end_date, version_files=''):
-
-    month, year = prep.get_dates()
-    year = str(year)
+def init_process(start_date,end_date, month, year):
 
     _start_date = datetime.strptime(start_date, '%d-%m-%Y')
     _end_date = datetime.strptime(end_date, '%d-%m-%Y')
@@ -92,24 +40,15 @@ def init_process(start_date,end_date, version_files=''):
     _start_date = _start_date.strftime('%Y-%m-%d')
     _end_date = _end_date.strftime('%Y-%m-%d')
 
-    if device == 'mac':
-        csv_path_ML_Totales = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{year}/{month}/Notas_de_credito_totales_ML.csv'
-        csv_path_ML_Parciales = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{year}/{month}/Notas_de_credito_parciales_ML.csv'
-        csv_path_AMZ_Totales = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{year}/{month}/Notas_de_credito_totales_AMAZON.csv'
-        csv_path_AMZ_Parciales = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{year}/{month}/Notas_de_credito_parciales_AMAZON.csv'
+    # -----------------------------------------------------------------------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------------------------------------------------------------------
+    csv_path_ML_Totales = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{year}/{month}/Notas_de_credito_totales_ML.csv'
+    csv_path_ML_Parciales = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{year}/{month}/Notas_de_credito_parciales_ML.csv'
+    csv_path_AMZ_Totales = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{year}/{month}/Notas_de_credito_totales_AMAZON.csv'
+    csv_path_AMZ_Parciales = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{year}/{month}/Notas_de_credito_parciales_AMAZON.csv'
+    # -----------------------------------------------------------------------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------------------------------------------------------------------
 
-    elif device == 'dell':
-        csv_path_ML_Totales = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{year}\{month}\Notas_de_credito_totales_ML.csv'
-        csv_path_ML_Parciales = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{year}\{month}\Notas_de_credito_parciales_ML.csv'
-        csv_path_AMZ_Totales = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{year}\{month}\Notas_de_credito_totales_AMAZON.csv'
-        csv_path_AMZ_Parciales = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{year}\{month}\Notas_de_credito_parciales_AMAZON.csv'
-
-    elif device == 'rog':
-        base_path = 'PENDIENTE'
-
-
-
-    #print(_start_date_ML, _end_date_ML, _start_date, _end_date, _start_date_AMZ, _end_date_AMZ)
 
     # MERCADO-LIBRE TOTALES
     query_template_ML_Totales = f"""
@@ -546,45 +485,20 @@ def init_process(start_date,end_date, version_files=''):
     query_name = 'AMAZON PARCIALES'
     fetch_data(query_name, query_template_AMZ_Parciales, csv_path_AMZ_Parciales)
 
-    # Información del correo electrónico
-    sender_email = 'sergio@wonderbrands.co'
-    sender_password = creds.gmail_password
-    recipients = ['carlos.hinojosa@wonderbrands.co']
-    cc_recipients = ['rosalba@wonderbrands.co', 'greta@somos-reyes.com', 'alex@wonderbrands.co', 'will@wonderbrands.co', 'eric@wonderbrands.co', 'sebastian@wonderbrands.co']
-    #recipients = ['sergio@wonderbrands.co','sergiogil.fiein@gmail.com','lili.men.mor11@gmail.com']
-    #cc_recipients = ['sergio.gil.guerrero.garcia@gmail.com']
-    subject = f'{version_files}*Notas de Crédito a generar del {start_date} al {end_date}*'
-    body = '''\
-    <html>
-      <head></head>
-      <body>
-        <p>Buen día</p>
-        <p>Hola a todos, espero que estén muy bien. Les comparto las devoluciones que generarían Nota de Crédito para el período referenciado. Se incluyen las parciales y totales de Mercadolibre y Amazon.</p>
-        <p>Adjunto encontrarán los archivos correspondientes.</p>
-        </br>
-        <p>Saludos</p>
-      </body>
-    </html>
-    '''
 
-    # Enviar el correo electrónico con los archivos adjuntos
-    attachment_paths = [csv_path_ML_Totales, csv_path_ML_Parciales, csv_path_AMZ_Totales, csv_path_AMZ_Parciales]
-    send_email_with_attachments(sender_email, sender_password, recipients, cc_recipients, subject, body, attachment_paths)
+
 
 if __name__ == '__main__':
-
-    # ************************************************************************
-    device='dell' # mac, dell, rog
-
     # FECHAS   dia-mes-año
-    start_date = '26-06-2025'
-    end_date = '27-07-2025'
 
-    first_version=False
-    # ************************************************************************
+    start_date = '29-05-2025'
+    end_date = '26-06-2025'
+    month_ = 'Julio'
+    year_ = '2025'
 
-    # Se crean las carpetas a fecha de hoy para el proceso del cierre contable.
-    prep.create_folders(device=device)
-    tm.sleep(2)
-    init_process(start_date,end_date) if first_version else init_process(start_date, end_date, ' VERSIÓN CORREGIDA ')
+    # ************************************
+
+    init_process(start_date,end_date, month_, year_)
+
+
 

@@ -37,7 +37,7 @@ def filter_orders(csv_file, type_val, marketplace_val):
         print('Lista vacía, no hay math en órdenes')
         return [''],'%s',0
     else:
-        print(type_val, marketplace_val, orders_list)
+        print(f'\n ** {type_val} - {marketplace_val} -> {orders_list} ** \n')
         return orders_list, placeholders, num_records
 
 def marketplace_references(csv_file):
