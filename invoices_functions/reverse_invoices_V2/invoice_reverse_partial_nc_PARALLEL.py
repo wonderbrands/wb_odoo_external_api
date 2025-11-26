@@ -50,7 +50,7 @@ print('Fecha:' + today_date.strftime("%Y-%m-%d %H:%M:%S"))
 
 # ***********************************************
 # ARCHIVO DE CONFIGURACIÓN
-config_file = 'config.json'
+config_file = 'config_dev2.json'
 # ***********************************************
 
 config_file_name = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Repos\wb_odoo_external_api\config\{config_file}'
@@ -67,9 +67,9 @@ year_executed = str(year_executed)
 
 # ----------------------------------------------------------------
 # Mes y año manual
-# month_executed = 'Febrero'
-# # year_executed = '2024'
-# invoice_date = '2025-02-28'
+month_executed = 'Septiembre'
+year_executed = '2025'
+invoice_date = '2025-09-02'
 # ----------------------------------------------------------------
 
 
@@ -108,6 +108,7 @@ def current_execution(func):
     return wrapper
 @current_execution
 def reverse_invoice_partial_ind_meli():
+    global invoice_date
     print('** Notas de credito parciales MELI Individuales **')
     # Formato para query
     type_filter = 'INDIVIDUAL'
@@ -240,7 +241,7 @@ def reverse_invoice_partial_ind_meli():
                         AND c.amount_total - ifnull(t.refunded_amt - t.shipping_amt, tt.refunded_amt - tt.shipping_amt) > 1 #QUE EL MONTO DEL REEMBOLSO SEA MENOR AL MONTO DE LA VENTA, CONSIDERANDO ENVIO
                         AND (b.amount_total - c.amount_total < 1 AND b.amount_total - c.amount_total > (-1)) #QUE SEA INNDIVIDUAL
                         AND f.order_name is not null #QUE LA SO TENGA UN SOLO SKU
-                        AND ROUND(ifnull(d.refunded_amt, dd.refunded_amt) / unit_price, 2) in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)
+                        #AND ROUND(ifnull(d.refunded_amt, dd.refunded_amt) / unit_price, 2) in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)
                         AND c.name in ({});
                         """.format(placeholders), tuple(dates_list_params+list_orders))
     invoice_records = mycursor.fetchall()
@@ -289,8 +290,13 @@ def reverse_invoice_partial_ind_meli():
                     if inv_origin_name in inv['invoice_origin']:
                         #--------------------------AGREGAR CONDICIONAL PARA SABER SI TIENE NOTA DE CREDITO--------------------------
                         #Validamos si la SO ya tiene una nota de crédito creada
-                        existing_credit_note = models.execute_kw(db_name, uid, password, 'account.move', 'search', [[['invoice_origin', '=', inv_origin_name], ['move_type', '=', 'out_refund'], ['state', 'not ilike', 'cancel']]])
-                        if not existing_credit_note:
+
+                        # ------ Test 04 septiembre 2025 ------------------
+                        #existing_credit_note = models.execute_kw(db_name, uid, password, 'account.move', 'search', [[['invoice_origin', '=', inv_origin_name], ['move_type', '=', 'out_refund'], ['state', 'not ilike', 'cancel']]])
+
+                        # ------ Test 04 septiembre 2025 ------------------
+                        #if not existing_credit_note:
+                        if True:
                             try:
                                 #Busca la órden de venta
                                 sale_order = models.execute_kw(db_name, uid, password, 'sale.order', 'search_read', [[['name', '=', inv_origin_name]]])[0]
@@ -328,11 +334,15 @@ def reverse_invoice_partial_ind_meli():
                                 for lines in sale_line_id:
                                     if lines['product_id'][0] == int(inv_product_id):
                                         nc_lines = {'product_id': lines['product_id'][0],
-                                                    'quantity': inv_qty_refunded,
-                                                    'name': lines['name'],  # Puedes ajustar esto según tus necesidades
+                                                    #'quantity': inv_qty_refunded,
+                                                    'name': 'Devolucion parcial por falta de tornillos',#lines['name'],  #Se puede ajustar este / que sea desciptivo del motivo del reembolso
                                                     'price_unit': inv_refund_amount,
                                                     'product_uom_id': lines['product_uom'][0],
                                                     'tax_ids': [(6, 0, [lines['tax_id'][0]])],
+
+                                                    # -------- Cambio 04 sep 2025 ------------
+                                                    'sale_line_ids': [(6, 0, [lines['id']])],  #vínculo a SO
+                                                    # ----------------------------------------
                                                     }
                                         refund_vals['invoice_line_ids'].append((0, 0, nc_lines))
                                     else:
@@ -472,14 +482,9 @@ def reverse_invoice_partial_ind_meli():
         smtpObj = smtplib.SMTP(smtp_server, smtp_port)
         smtpObj.starttls()
         smtpObj.login(smtp_username, smtp_password)
-        #smtpObj.sendmail(smtp_username, msg['To'], msg.as_string())
-        smtpObj.send_message(msg)
+        # smtpObj.send_message(msg)
     except Exception as i:
         print(f"Error: no se pudo enviar el correo: {i}")
-
-    print('----------------------------------------------------------------')
-    print('Proceso NC globales Meli completado')
-    print('----------------------------------------------------------------')
 
     # Cierre de conexiones
     progress_bar.close()
@@ -488,6 +493,7 @@ def reverse_invoice_partial_ind_meli():
     mydb.close()
 @current_execution
 def reverse_invoice_partial_glob_meli():
+    global invoice_date
     print('** Notas de credito parciales MELI Globales **')
     # Formato para query
     type_filter = 'GLOBAL'
@@ -850,14 +856,9 @@ def reverse_invoice_partial_glob_meli():
         smtpObj = smtplib.SMTP(smtp_server, smtp_port)
         smtpObj.starttls()
         smtpObj.login(smtp_username, smtp_password)
-        #smtpObj.sendmail(smtp_username, msg['To'], msg.as_string())
         smtpObj.send_message(msg)
     except Exception as i:
         print(f"Error: no se pudo enviar el correo: {i}")
-
-    print('----------------------------------------------------------------')
-    print('Proceso NC globales Meli completado')
-    print('----------------------------------------------------------------')
 
     # Cierre de conexiones
     progress_bar.close()
@@ -866,6 +867,7 @@ def reverse_invoice_partial_glob_meli():
     mydb.close()
 @current_execution
 def reverse_invoice_partial_ind_amz():
+    global invoice_date
     print('** Notas de credito parciales AMAZON Individuales **')
     # Formato para query
     type_filter = 'INDIVIDUAL'
@@ -1188,14 +1190,9 @@ def reverse_invoice_partial_ind_amz():
         smtpObj = smtplib.SMTP(smtp_server, smtp_port)
         smtpObj.starttls()
         smtpObj.login(smtp_username, smtp_password)
-        #smtpObj.sendmail(smtp_username, msg['To'], msg.as_string())
         smtpObj.send_message(msg)
     except Exception as i:
         print(f"Error: no se pudo enviar el correo: {i}")
-
-    print('----------------------------------------------------------------')
-    print('Proceso NC globales Meli completado')
-    print('----------------------------------------------------------------')
 
     # Cierre de conexiones
     progress_bar.close()
@@ -1204,6 +1201,7 @@ def reverse_invoice_partial_ind_amz():
     mydb.close()
 @current_execution
 def reverse_invoice_partial_glob_amz():
+    global invoice_date
     print('** Notas de credito parciales AMAZON Globales **')
     # Formato para query
     type_filter = 'GLOBAL'
@@ -1520,14 +1518,9 @@ def reverse_invoice_partial_glob_amz():
         smtpObj = smtplib.SMTP(smtp_server, smtp_port)
         smtpObj.starttls()
         smtpObj.login(smtp_username, smtp_password)
-        #smtpObj.sendmail(smtp_username, msg['To'], msg.as_string())
         smtpObj.send_message(msg)
     except Exception as i:
         print(f"Error: no se pudo enviar el correo: {i}")
-
-    print('----------------------------------------------------------------')
-    print('Proceso NC globales Meli completado')
-    print('----------------------------------------------------------------')
 
     # Cierre de conexiones
     progress_bar.close()
@@ -1559,9 +1552,9 @@ if __name__ == "__main__":
         # Enviar las funciones al executor
         futures = [
             executor.submit(reverse_invoice_partial_ind_meli),
-            executor.submit(reverse_invoice_partial_glob_meli),
-            executor.submit(reverse_invoice_partial_ind_amz),
-            executor.submit(reverse_invoice_partial_glob_amz)
+            #executor.submit(reverse_invoice_partial_glob_meli),
+            #executor.submit(reverse_invoice_partial_ind_amz),
+            #executor.submit(reverse_invoice_partial_glob_amz)
         ]
 
         # Esperar a que todas las funciones terminen

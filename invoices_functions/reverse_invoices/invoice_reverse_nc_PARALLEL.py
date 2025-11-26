@@ -34,8 +34,8 @@ import datetime
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from Test import extract_orders as e_o
-from Test import prepare_folders as prep
+from unit_tools import extract_orders as e_o
+from unit_tools import prepare_folders as prep
 
 print('================================================================')
 print('BIENVENIDO AL PROCESO DE NOTAS DE CRÉDITO PARA MARKETPLACES')
@@ -58,8 +58,8 @@ l10n_mx_edi_payment_method_id = 3
 l10n_mx_edi_usage = 'G02'
 
 #FECHAS DEL PERIODO ***********************************************
-start_date_str = datetime.date(2025, 6, 26).strftime("%Y-%m-%d")
-end_date_str = datetime.date(2025, 7, 27).strftime("%Y-%m-%d")
+start_date_str = datetime.date(2025, 1, 1).strftime("%Y-%m-%d")
+end_date_str = datetime.date(2025, 8, 27).strftime("%Y-%m-%d")
 # ***********************************************
 
 month_executed, year_executed = prep.get_dates()
@@ -171,6 +171,7 @@ def reverse_invoice_meli(): #NOTAS DE CRÉDITO INDIVIDUALES MELI
                                    LEFT JOIN somos_reyes.ml_order_update b
                                    ON a.order_id = b.order_id
                                    WHERE refunded_amt > 0 AND b.pack_id = 'None' AND date(payment_date_last_modified) >= %s AND date(payment_date_last_modified) <= %s
+                                   AND status_detail <> 'bpp_covered'
                                    GROUP BY 1) d
                         ON c.channel_order_id = d.order_id
                         LEFT JOIN (SELECT a.pack_id, max(payment_date_last_modified) 'payment_date_last_modified', SUM(b.paid_amt) 'paid_amt', SUM(b.refunded_amt) 'refunded_amt', SUM(shipping_amt) 'shipping_amt'
@@ -178,6 +179,7 @@ def reverse_invoice_meli(): #NOTAS DE CRÉDITO INDIVIDUALES MELI
                         LEFT JOIN somos_reyes.ml_order_payments b
                         ON a.order_id = b.order_id
                         WHERE b.refunded_amt > 0 AND a.pack_id <> 'None' AND date(payment_date_last_modified) >= %s AND date(payment_date_last_modified) <= %s
+                        AND b.status_detail <> 'bpp_covered'
                         GROUP BY 1) dd
                         ON c.yuju_pack_id = dd.pack_id
                         LEFT JOIN (SELECT distinct invoice_origin FROM somos_reyes.odoo_new_account_move_aux WHERE name like '%RINV%') e
@@ -360,10 +362,9 @@ def reverse_invoice_meli(): #NOTAS DE CRÉDITO INDIVIDUALES MELI
         # Define remitente y destinatario
         msg = MIMEMultipart()
         msg['From'] = 'sergio@wonderbrands.co'
-        msg['To'] = ', '.join(
-            ['carlos.hinojosa@wonderbrands.co', 'sergio@wonderbrands.co', 'eric@wonderbrands.co','rosalba@wonderbrands.co', 'greta@somos-reyes.com',
-             'contabilidad@somos-reyes.com', 'alex@wonderbrands.co', 'will@wonderbrands.co'])
-        msg['Subject'] = 'Script Automático Meli - Creación de notas de crédito para facturas individuales'
+        msg['To'] = ', '.join(['carlos.hinojosa@wonderbrands.co', 'sergio@wonderbrands.co', 'eric@wonderbrands.co','jeronimo@wonderbrands.co', 'greta@somos-reyes.com',
+             'contabilidad@somos-reyes.com', 'alex@wonderbrands.co', 'will@wonderbrands.co', 'sebastian@wonderbrands.co'])
+        msg['Subject'] = 'Script Automático MercadoLibre - Creación de notas de crédito para facturas INDIVIDUALES / reembolsos TOTALES'
         # Adjuntar el cuerpo del correo
         msg.attach(MIMEText(body, 'html'))
         # Adjuntar el archivo Excel al mensaje
@@ -454,6 +455,7 @@ def reverse_invoice_global_meli():
                                    LEFT JOIN somos_reyes.ml_order_update b
                                    ON a.order_id = b.order_id
                                    WHERE refunded_amt > 0 AND b.pack_id = 'None' AND date(payment_date_last_modified) >= %s AND date(payment_date_last_modified) <= %s
+                                   AND status_detail <> 'bpp_covered'
                                    GROUP BY 1) d
                         ON c.channel_order_id = d.order_id
                         LEFT JOIN (SELECT a.pack_id, max(payment_date_last_modified) 'payment_date_last_modified', SUM(b.paid_amt) 'paid_amt', SUM(b.refunded_amt) 'refunded_amt', SUM(shipping_amt) 'shipping_amt'
@@ -461,6 +463,7 @@ def reverse_invoice_global_meli():
                         LEFT JOIN somos_reyes.ml_order_payments b
                         ON a.order_id = b.order_id
                         WHERE b.refunded_amt > 0 AND a.pack_id <> 'None' AND date(payment_date_last_modified) >= %s AND date(payment_date_last_modified) <= %s
+                        AND b.status_detail <> 'bpp_covered'
                         GROUP BY 1) dd
                         ON c.yuju_pack_id = dd.pack_id
                         LEFT JOIN (SELECT distinct invoice_origin FROM somos_reyes.odoo_new_account_move_aux WHERE name like '%RINV%') e
@@ -675,11 +678,11 @@ def reverse_invoice_global_meli():
         # Define remitente y destinatario
         msg = MIMEMultipart()
         msg['From'] = 'sergio@wonderbrands.co'
-        msg['To'] = ', '.join(
-            ['carlos.hinojosa@wonderbrands.co', 'sergio@wonderbrands.co', 'eric@wonderbrands.co','rosalba@wonderbrands.co',
-             'greta@somos-reyes.com',
-             'contabilidad@somos-reyes.com', 'alex@wonderbrands.co', 'will@wonderbrands.co'])
-        msg['Subject'] = 'Script Automático Meli - Creación de notas de crédito para facturas globales'
+        msg['To'] = ', '.join(['carlos.hinojosa@wonderbrands.co', 'sergio@wonderbrands.co', 'eric@wonderbrands.co',
+             'jeronimo@wonderbrands.co', 'greta@somos-reyes.com',
+             'contabilidad@somos-reyes.com', 'alex@wonderbrands.co', 'will@wonderbrands.co',
+             'sebastian@wonderbrands.co'])
+        msg['Subject'] = 'Script Automático MercadoLibre - Creación de notas de crédito para facturas GLOBALES / reembolsos TOTALES'
         # Adjuntar el cuerpo del correo
         msg.attach(MIMEText(body, 'html'))
         # Adjuntar el archivo Excel al mensaje
@@ -946,10 +949,11 @@ def reverse_invoice_amazon():
         # Define remitente y destinatario
         msg = MIMEMultipart()
         msg['From'] = 'sergio@wonderbrands.co'
-        msg['To'] = ', '.join(
-            ['carlos.hinojosa@wonderbrands.co', 'sergio@wonderbrands.co', 'eric@wonderbrands.co', 'rosalba@wonderbrands.co', 'greta@somos-reyes.com',
-             'contabilidad@somos-reyes.com', 'alex@wonderbrands.co', 'will@wonderbrands.co'])
-        msg['Subject'] = 'Script Automático Amazon - Creación de notas de crédito para facturas individuales'
+        msg['To'] = ', '.join(['carlos.hinojosa@wonderbrands.co', 'sergio@wonderbrands.co', 'eric@wonderbrands.co',
+             'jeronimo@wonderbrands.co', 'greta@somos-reyes.com',
+             'contabilidad@somos-reyes.com', 'alex@wonderbrands.co', 'will@wonderbrands.co',
+             'sebastian@wonderbrands.co'])
+        msg['Subject'] = 'Script Automático Amazon - Creación de notas de crédito para facturas INDIVIDUALES / reembolsos TOTALES'
         # Adjuntar el cuerpo del correo
         msg.attach(MIMEText(body, 'html'))
         # Adjuntar el archivo Excel al mensaje
@@ -1246,11 +1250,11 @@ def reverse_invoice_global_amazon():
         # Define remitente y destinatario
         msg = MIMEMultipart()
         msg['From'] = 'sergio@wonderbrands.co'
-        msg['To'] = ', '.join(
-            ['carlos.hinojosa@wonderbrands.co', 'sergio@wonderbrands.co', 'eric@wonderbrands.co', 'rosalba@wonderbrands.co',
-             'greta@somos-reyes.com',
-             'contabilidad@somos-reyes.com', 'alex@wonderbrands.co', 'will@wonderbrands.co', 'sebastian@wonderbrands.co'])
-        msg['Subject'] = 'Script Automático Amazon - Creación de notas de crédito para facturas globales'
+        msg['To'] = ', '.join(['carlos.hinojosa@wonderbrands.co', 'sergio@wonderbrands.co', 'eric@wonderbrands.co',
+             'jeronimo@wonderbrands.co', 'greta@somos-reyes.com',
+             'contabilidad@somos-reyes.com', 'alex@wonderbrands.co', 'will@wonderbrands.co',
+             'sebastian@wonderbrands.co'])
+        msg['Subject'] = 'Script Automático Amazon - Creación de notas de crédito para facturas GLOBALES / reembolsos TOTALES'
         # Adjuntar el cuerpo del correo
         msg.attach(MIMEText(body, 'html'))
         # Adjuntar el archivo Excel al mensaje

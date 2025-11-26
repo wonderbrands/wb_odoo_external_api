@@ -40,24 +40,24 @@ from unit_tools import prepare_folders as prep
 print('================================================================')
 print('BIENVENIDO AL PROCESO DE NOTAS DE CRÉDITO PARA MARKETPLACES')
 print('================================================================')
-print('SCRIPT DE CREACIÓN DE NOTAS DE CRÉDITO PARA FACTURAS PARCIALES')
+print('SCRIPT DE CREACIÓN DE NOTAS DE CRÉDITO PARA FACTURAS POR MULTIPLOS DE UNIDADES')
 print('================================================================')
 today_date = datetime.datetime.now()
 dir_path = os.path.dirname(os.path.realpath(__file__))
 print('Fecha:' + today_date.strftime("%Y-%m-%d %H:%M:%S"))
-#Archivo de configuración - Use config_dev.json si está haciendo pruebas
-#Archivo de configuración - Use config.json cuando los cambios vayan a producción
+# Archivo de configuración - Use config_dev.json si está haciendo pruebas
+# Archivo de configuración - Use config.json cuando los cambios vayan a producción
 
 # ***********************************************
 # ARCHIVO DE CONFIGURACIÓN
-config_file = 'config.json'
+config_file = 'config_dev2.json'
 # ***********************************************
 
 config_file_name = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Repos\wb_odoo_external_api\config\{config_file}'
 l10n_mx_edi_payment_method_id = 3
 l10n_mx_edi_usage = 'G02'
 
-#FECHAS DEL PERIODO
+# FECHAS DEL PERIODO
 start_date_str = datetime.date(2025, 1, 1).strftime("%Y-%m-%d")
 end_date_str = datetime.date(2025, 8, 27).strftime("%Y-%m-%d")
 # ***********************************************
@@ -67,9 +67,9 @@ year_executed = str(year_executed)
 
 # ----------------------------------------------------------------
 # Mes y año manual
-# month_executed = 'Febrero'
-# # year_executed = '2024'
-# invoice_date = '2025-02-28'
+month_executed = 'Septiembre'
+year_executed = '2025'
+invoice_date = '2025-09-02'
 # ----------------------------------------------------------------
 
 
@@ -77,9 +77,11 @@ print('******************************************')
 print(month_executed, year_executed)
 print('******************************************')
 
-#PATHS de los archivos de ordenes conciliadas
-orders_meli_file_path = 'C:/Users/Sergio Gil Guerrero/Documents/WonderBrands/Finanzas/{}/{}/Conciliadas/Notas_de_credito_parciales_ML.csv'.format(year_executed,month_executed)
-orders_amz_file_path = 'C:/Users/Sergio Gil Guerrero/Documents/WonderBrands/Finanzas/{}/{}/Conciliadas/Notas_de_credito_parciales_AMZ.csv'.format(year_executed,month_executed)
+# PATHS de los archivos de ordenes conciliadas
+orders_meli_file_path = 'C:/Users/Sergio Gil Guerrero/Documents/WonderBrands/Finanzas/{}/{}/Conciliadas/Notas_de_credito_fullunit_ML.csv'.format(
+    year_executed, month_executed)
+orders_amz_file_path = 'C:/Users/Sergio Gil Guerrero/Documents/WonderBrands/Finanzas/{}/{}/Conciliadas/Notas_de_credito_fullunit_AMZ.csv'.format(
+    year_executed, month_executed)
 
 
 def get_odoo_access():
@@ -87,16 +89,20 @@ def get_odoo_access():
         config = json.load(config_file)
 
     return config['odoo']
+
 def get_psql_access():
     with open(config_file_name, 'r') as config_file:
         config = json.load(config_file)
 
     return config['psql']
+
 def get_email_access():
     with open(config_file_name, 'r') as config_file:
         config = json.load(config_file)
 
     return config['email']
+
+
 def current_execution(func):
     def wrapper(*args, **kwargs):
         print('\n \n ******************************************************')
@@ -105,15 +111,20 @@ def current_execution(func):
         print(f"{func.__name__} terminada")
         print('****************************************************** \n \n')
         return result
+
     return wrapper
+
+
 @current_execution
 def reverse_invoice_partial_ind_meli():
-    print('** Notas de credito parciales MELI Individuales **')
+    global invoice_date
+    print('** Notas de credito fullunit MELI Individuales **')
     # Formato para query
     type_filter = 'INDIVIDUAL'
     marketplace_filter = 'MERCADO LIBRE'
     list_orders, placeholders, num_records = e_o.filter_orders(orders_meli_file_path, type_filter, marketplace_filter)
-    dates_list_params = [start_date_str, end_date_str, start_date_str, end_date_str,start_date_str, end_date_str, start_date_str, end_date_str]
+    dates_list_params = [start_date_str, end_date_str, start_date_str, end_date_str, start_date_str, end_date_str,
+                         start_date_str, end_date_str]
     # Obtener credenciales
     odoo_keys = get_odoo_access()
     psql_keys = get_psql_access()
@@ -146,7 +157,7 @@ def reverse_invoice_partial_ind_meli():
     mycursor = mydb.cursor()
     print('----------------------------------------------------------------')
     print('Vaya por un tecito o un café porque este proceso tomará algo de tiempo')
-    #GLOBALES MELI
+    # GLOBALES MELI
     mycursor.execute("""#INDIVIDUALES
                         SELECT c.name,
                                b.id 'account_move_id',
@@ -163,10 +174,10 @@ def reverse_invoice_partial_ind_meli():
                                'INDIVIDUAL' as type,
                                'MERCADO LIBRE' as marketplace*/
                         FROM somos_reyes.odoo_new_account_move_aux b
-                        
+
                         LEFT JOIN odoo_new_sale_order c
                         ON b.invoice_origin = c.name
-                        
+
                         LEFT JOIN (SELECT a.order_id, sku_id,
                                           max(payment_date_last_modified) 'payment_date_last_modified',
                                           SUM(paid_amt) 'paid_amt',
@@ -182,7 +193,7 @@ def reverse_invoice_partial_ind_meli():
                                    GROUP BY 1, 2
                                    ) d
                         ON c.channel_order_id = d.order_id
-                        
+
                         LEFT JOIN (SELECT a.pack_id, sku_id,
                                           max(payment_date_last_modified) 'payment_date_last_modified',
                                           SUM(b.paid_amt) 'paid_amt',
@@ -198,10 +209,10 @@ def reverse_invoice_partial_ind_meli():
                         GROUP BY 1, 2
                         ) dd
                         ON c.yuju_pack_id = dd.pack_id
-                        
+
                         LEFT JOIN (SELECT distinct invoice_origin FROM odoo_new_account_move_aux WHERE name like '%RINV%') e
                         ON c.name = e.invoice_origin
-                        
+
                         LEFT JOIN (SELECT order_name, default_code, product_id, SUM(product_qty) 'product_qty', ROUND(SUM(price_total) / SUM(product_qty), 2) 'unit_price'
                                    FROM odoo_new_sale_order_line a
                                    LEFT JOIN odoo_new_product_product_bis b
@@ -209,7 +220,7 @@ def reverse_invoice_partial_ind_meli():
                                    WHERE product_id <> '1'
                                    GROUP BY 1, 2, 3) f
                         ON c.name = f.order_name AND ifnull(d.sku_id, dd.sku_id) = f.default_code
-                        
+
                         LEFT JOIN (SELECT a.order_id,
                                           SUM(refunded_amt) 'refunded_amt',
                                           SUM(shipping_amt) 'shipping_amt'
@@ -220,7 +231,7 @@ def reverse_invoice_partial_ind_meli():
                                    AND status_detail <> 'bpp_covered'
                                    GROUP BY 1) t
                         ON c.channel_order_id = t.order_id
-                        
+
                         LEFT JOIN (SELECT a.pack_id,
                                           SUM(b.refunded_amt) 'refunded_amt',
                                           SUM(shipping_amt) 'shipping_amt'
@@ -232,7 +243,7 @@ def reverse_invoice_partial_ind_meli():
                         GROUP BY 1
                         ) tt
                         ON c.yuju_pack_id = tt.pack_id
-                        
+
                         WHERE (d.order_id is not null or dd.pack_id is not null) #QUE TENGA REEMBLSO
                         AND e.invoice_origin is null #QUE NO TENGA NOTA DE CREDITO
                         AND b.invoice_partner_display_name <> 'PÚBLICO EN GENERAL'
@@ -240,44 +251,44 @@ def reverse_invoice_partial_ind_meli():
                         AND c.amount_total - ifnull(t.refunded_amt - t.shipping_amt, tt.refunded_amt - tt.shipping_amt) > 1 #QUE EL MONTO DEL REEMBOLSO SEA MENOR AL MONTO DE LA VENTA, CONSIDERANDO ENVIO
                         AND (b.amount_total - c.amount_total < 1 AND b.amount_total - c.amount_total > (-1)) #QUE SEA INNDIVIDUAL
                         AND f.order_name is not null #QUE LA SO TENGA UN SOLO SKU
-                        AND ROUND(ifnull(d.refunded_amt, dd.refunded_amt) / unit_price, 2) in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)
+                        #AND ROUND(ifnull(d.refunded_amt, dd.refunded_amt) / unit_price, 2) in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)
                         AND c.name in ({});
-                        """.format(placeholders), tuple(dates_list_params+list_orders))
+                        """.format(placeholders), tuple(dates_list_params + list_orders))
     invoice_records = mycursor.fetchall()
-    #Lista de SO a las que se les creó una credit_notes
+    # Lista de SO a las que se les creó una credit_notes
     so_modified = []
-    #Lista de las facturas enlazadas a la SO y no existen
+    # Lista de las facturas enlazadas a la SO y no existen
     inv_no_exist = []
-    #Lista de SO que ya contaban con credit_notes antes del script
+    # Lista de SO que ya contaban con credit_notes antes del script
     so_with_refund = []
-    #Lista de nombres de las notas de crédito creadas
+    # Lista de nombres de las notas de crédito creadas
     nc_created = []
-    #Lista de SO que no existen en la factura global que tienen enlazada
+    # Lista de SO que no existen en la factura global que tienen enlazada
     so_no_exist_in_invoice = []
-    #Lista de facturas origen
+    # Lista de facturas origen
     so_origin_invoice = []
-    #Lista de referencias MKP para cada SO
+    # Lista de referencias MKP para cada SO
     so_mkp_reference = []
     # Lista de total de la NC
     nc_amount_total = []
-    #Lista de SKUS dl reembolso
+    # Lista de SKUS dl reembolso
     nc_product_id = []
-    #Lista de productos del reembolso que no existen en Odoo
+    # Lista de productos del reembolso que no existen en Odoo
     nc_product_id_no_exist = []
     print('----------------------------------------------------------------')
     print('Creando notas de crédito')
     print('Este proceso tomará unos minutos')
-    #Creación de notas de crédito
+    # Creación de notas de crédito
     try:
         progress_bar = tqdm(total=len(invoice_records), desc="Procesando")
         for each in invoice_records:
-            inv_origin_name = each[0] # Almacena el nombre de la SO
-            inv_id = each[1] # Almacena el ID de la factura
-            inv_name = each[2] # Almacena el nombre de la factura
-            inv_product_id = each[3] # Almacena el product_id del reembolso
-            inv_refund_amount = float(each[4]) / 1.16 # Almacena el monto del reembolso
-            inv_qty_refunded = each[5] # Almacena la cantidad del SKU reembolsado
-            #Busca la factura que contenga el nombre de la SO
+            inv_origin_name = each[0]  # Almacena el nombre de la SO
+            inv_id = each[1]  # Almacena el ID de la factura
+            inv_name = each[2]  # Almacena el nombre de la factura
+            inv_product_id = each[3]  # Almacena el product_id del reembolso
+            inv_refund_amount = float(each[4]) / 1.16  # Almacena el monto del reembolso
+            inv_qty_refunded = each[5]  # Almacena la cantidad del SKU reembolsado
+            # Busca la factura que contenga el nombre de la SO
             invoice = models.execute_kw(db_name, uid, password, 'account.move', 'search_read', [[['id', '=', inv_id]]])
             if invoice:
                 for inv in invoice:
@@ -287,21 +298,28 @@ def reverse_invoice_partial_ind_meli():
                     inv_journal_id = inv['journal_id'][0]
                     inv_payment = inv['l10n_mx_edi_payment_method_id'][0]
                     if inv_origin_name in inv['invoice_origin']:
-                        #--------------------------AGREGAR CONDICIONAL PARA SABER SI TIENE NOTA DE CREDITO--------------------------
-                        #Validamos si la SO ya tiene una nota de crédito creada
-                        existing_credit_note = models.execute_kw(db_name, uid, password, 'account.move', 'search', [[['invoice_origin', '=', inv_origin_name], ['move_type', '=', 'out_refund'], ['state', 'not ilike', 'cancel']]])
-                        if not existing_credit_note:
+                        # --------------------------AGREGAR CONDICIONAL PARA SABER SI TIENE NOTA DE CREDITO--------------------------
+                        # Validamos si la SO ya tiene una nota de crédito creada
+
+                        # ------ Test 04 septiembre 2025 ------------------
+                        # existing_credit_note = models.execute_kw(db_name, uid, password, 'account.move', 'search', [[['invoice_origin', '=', inv_origin_name], ['move_type', '=', 'out_refund'], ['state', 'not ilike', 'cancel']]])
+
+                        # ------ Test 04 septiembre 2025 ------------------
+                        # if not existing_credit_note:
+                        if True:
                             try:
-                                #Busca la órden de venta
-                                sale_order = models.execute_kw(db_name, uid, password, 'sale.order', 'search_read', [[['name', '=', inv_origin_name]]])[0]
+                                # Busca la órden de venta
+                                sale_order = models.execute_kw(db_name, uid, password, 'sale.order', 'search_read',
+                                                               [[['name', '=', inv_origin_name]]])[0]
                                 # Obtiene los datos necesarios directo de la SO
                                 sale_id = sale_order['id']
                                 sale_name = sale_order['name']
                                 sale_ref = sale_order['channel_order_reference']
                                 sale_team = sale_order['team_id'][0]
-                                #Busca el order line correspondiente de la orden de venta
-                                sale_line_id = models.execute_kw(db_name, uid, password, 'sale.order.line', 'search_read', [[['order_id', '=', sale_id]]])
-                                #Define los valores de la nota de crédito
+                                # Busca el order line correspondiente de la orden de venta
+                                sale_line_id = models.execute_kw(db_name, uid, password, 'sale.order.line',
+                                                                 'search_read', [[['order_id', '=', sale_id]]])
+                                # Define los valores de la nota de crédito
                                 inv_int = int(inv_id)
                                 sale_int = int(sale_id)
 
@@ -328,38 +346,49 @@ def reverse_invoice_partial_ind_meli():
                                 for lines in sale_line_id:
                                     if lines['product_id'][0] == int(inv_product_id):
                                         nc_lines = {'product_id': lines['product_id'][0],
-                                                    'quantity': inv_qty_refunded,
-                                                    'name': lines['name'],  # Puedes ajustar esto según tus necesidades
+                                                    # 'quantity': inv_qty_refunded,
+                                                    'name': 'Devolucion parcial por falta de tornillos',
+                                                    # lines['name'],  #Se puede ajustar este / que sea desciptivo del motivo del reembolso
                                                     'price_unit': inv_refund_amount,
                                                     'product_uom_id': lines['product_uom'][0],
                                                     'tax_ids': [(6, 0, [lines['tax_id'][0]])],
+
+                                                    # -------- Cambio 04 sep 2025 ------------
+                                                    'sale_line_ids': [(6, 0, [lines['id']])],  # vínculo a SO
+                                                    # ----------------------------------------
                                                     }
                                         refund_vals['invoice_line_ids'].append((0, 0, nc_lines))
                                     else:
-                                        print(f"El producto {inv_product_id} no coincide con ninguna línea de la factura {inv_name}")
+                                        print(
+                                            f"El producto {inv_product_id} no coincide con ninguna línea de la factura {inv_name}")
                                         continue
-                                #Crea la nota de crédito
-                                create_nc = models.execute_kw(db_name, uid, password, 'account.move', 'create', [refund_vals])
-                                #Actualiza la nota de crédito
-                                #Agrega mensaje al Attachment de la nota de crédito
+                                # Crea la nota de crédito
+                                create_nc = models.execute_kw(db_name, uid, password, 'account.move', 'create',
+                                                              [refund_vals])
+                                # Actualiza la nota de crédito
+                                # Agrega mensaje al Attachment de la nota de crédito
                                 message = {
                                     'body': f"Esta nota de crédito fue creada a partir de la factura: {inv_name}, de la órden {sale_name}, con folio fiscal {inv_uuid}, a solicitud del equipo de Contabilidad, por el equipo de Tech mediante API.",
                                     'message_type': 'comment',
                                 }
-                                write_msg_nc = models.execute_kw(db_name, uid, password, 'account.move', 'message_post',[create_nc], message)
-                                #Enlazamos la venta con la nueva factura
-                                upd_sale = models.execute_kw(db_name, uid, password, 'sale.order', 'write', [[sale_id], {'invoice_ids': [(4, 0, create_nc)]}])
-                                #Publicamos la nota de crédito
-                                upd_nc_state = models.execute_kw(db_name, uid, password, 'account.move', 'action_post', [create_nc])
-                                #Timbramos la nota de crédito
-                                #upd_nc_stamp = models.execute_kw(db_name, uid, password, 'account.move', 'button_process_edi_web_services',[create_nc])
+                                write_msg_nc = models.execute_kw(db_name, uid, password, 'account.move', 'message_post',
+                                                                 [create_nc], message)
+                                # Enlazamos la venta con la nueva factura
+                                upd_sale = models.execute_kw(db_name, uid, password, 'sale.order', 'write',
+                                                             [[sale_id], {'invoice_ids': [(4, 0, create_nc)]}])
+                                # Publicamos la nota de crédito
+                                upd_nc_state = models.execute_kw(db_name, uid, password, 'account.move', 'action_post',
+                                                                 [create_nc])
+                                # Timbramos la nota de crédito
+                                # upd_nc_stamp = models.execute_kw(db_name, uid, password, 'account.move', 'button_process_edi_web_services',[create_nc])
                                 stamp_credit_note(models, db_name, uid, password, create_nc)
 
-                                #Buscamos el nombre de la factura ya creada
-                                search_nc_name = models.execute_kw(db_name, uid, password, 'account.move', 'search_read',[[['id', '=', create_nc]]])
+                                # Buscamos el nombre de la factura ya creada
+                                search_nc_name = models.execute_kw(db_name, uid, password, 'account.move',
+                                                                   'search_read', [[['id', '=', create_nc]]])
                                 nc_name = search_nc_name[0]['name']
                                 nc_total = search_nc_name[0]['amount_total']
-                                #Agregamos a las listas
+                                # Agregamos a las listas
                                 so_modified.append(sale_name)
                                 nc_created.append(nc_name)
                                 nc_amount_total.append(nc_total)
@@ -384,11 +413,11 @@ def reverse_invoice_partial_ind_meli():
                 progress_bar.update(1)
                 continue
     except Exception as e:
-       print(f"Error: no se pudo crear la nota de crédito: {e}")
+        print(f"Error: no se pudo crear la nota de crédito: {e}")
     # Define el cuerpo del correo
     print('----------------------------------------------------------------')
     print('Creando correo y excel')
-    #Excel
+    # Excel
     try:
         # Crear el archivo Excel y agregar los nombres de los arrays y los resultados
         workbook = openpyxl.Workbook()
@@ -421,7 +450,7 @@ def reverse_invoice_partial_ind_meli():
             sheet['H{}'.format(i + 2)] = so_no_exist_in_invoice[i]
 
         # Guardar el archivo Excel en disco
-        excel_file = 'nc_parciales_ind_meli_' + today_date.strftime("%Y%m%d") + '.xlsx'
+        excel_file = 'nc_fullunit_ind_meli_' + today_date.strftime("%Y%m%d") + '.xlsx'
         workbook.save(excel_file)
 
         # Leer el contenido del archivo Excel
@@ -456,10 +485,11 @@ def reverse_invoice_partial_ind_meli():
         msg = MIMEMultipart()
         msg['From'] = 'sergio@wonderbrands.co'
         msg['To'] = ', '.join(['carlos.hinojosa@wonderbrands.co', 'sergio@wonderbrands.co', 'eric@wonderbrands.co',
-             'jeronimo@wonderbrands.co', 'greta@somos-reyes.com',
-             'contabilidad@somos-reyes.com', 'alex@wonderbrands.co', 'will@wonderbrands.co',
-             'sebastian@wonderbrands.co'])
-        msg['Subject'] = 'Script Automático MercadoLibre - Creación de notas de crédito para facturas INDIVIDUALES / reembolsos PARCIALES'
+                               'jeronimo@wonderbrands.co', 'greta@somos-reyes.com',
+                               'contabilidad@somos-reyes.com', 'alex@wonderbrands.co', 'will@wonderbrands.co',
+                               'sebastian@wonderbrands.co'])
+        msg[
+            'Subject'] = 'Script Automático MercadoLibre - Creación de notas de crédito para facturas INDIVIDUALES / reembolsos FULLUNIT'
         # Adjuntar el cuerpo del correo
         msg.attach(MIMEText(body, 'html'))
         # Adjuntar el archivo Excel al mensaje
@@ -472,28 +502,27 @@ def reverse_invoice_partial_ind_meli():
         smtpObj = smtplib.SMTP(smtp_server, smtp_port)
         smtpObj.starttls()
         smtpObj.login(smtp_username, smtp_password)
-        #smtpObj.sendmail(smtp_username, msg['To'], msg.as_string())
-        smtpObj.send_message(msg)
+        # smtpObj.send_message(msg)
     except Exception as i:
         print(f"Error: no se pudo enviar el correo: {i}")
-
-    print('----------------------------------------------------------------')
-    print('Proceso NC globales Meli completado')
-    print('----------------------------------------------------------------')
 
     # Cierre de conexiones
     progress_bar.close()
     smtpObj.quit()
     mycursor.close()
     mydb.close()
+
+
 @current_execution
 def reverse_invoice_partial_glob_meli():
-    print('** Notas de credito parciales MELI Globales **')
+    global invoice_date
+    print('** Notas de credito fullunit MELI Globales **')
     # Formato para query
     type_filter = 'GLOBAL'
     marketplace_filter = 'MERCADO LIBRE'
     list_orders, placeholders, num_records = e_o.filter_orders(orders_meli_file_path, type_filter, marketplace_filter)
-    dates_list_params = [start_date_str, end_date_str, start_date_str, end_date_str, start_date_str, end_date_str, start_date_str, end_date_str]
+    dates_list_params = [start_date_str, end_date_str, start_date_str, end_date_str, start_date_str, end_date_str,
+                         start_date_str, end_date_str]
     # Obtener credenciales
     odoo_keys = get_odoo_access()
     psql_keys = get_psql_access()
@@ -594,7 +623,7 @@ def reverse_invoice_partial_glob_meli():
                                    AND status_detail <> 'bpp_covered'
                                    GROUP BY 1) t
                         ON c.channel_order_id = t.order_id
-                        
+
                         LEFT JOIN (SELECT a.pack_id,
                                           SUM(b.refunded_amt) 'refunded_amt',
                                           SUM(shipping_amt) 'shipping_amt'
@@ -614,7 +643,7 @@ def reverse_invoice_partial_glob_meli():
                         AND (b.amount_total - c.amount_total > 1 OR b.amount_total - c.amount_total < (-1))
                         AND f.order_name is not null
                         AND ROUND(ifnull(d.refunded_amt, dd.refunded_amt) / unit_price, 2) in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)
-                        AND c.name in ({});""".format(placeholders), tuple(dates_list_params+list_orders))
+                        AND c.name in ({});""".format(placeholders), tuple(dates_list_params + list_orders))
     invoice_records = mycursor.fetchall()
     # Lista de SO a las que se les creó una credit_notes
     so_modified = []
@@ -662,7 +691,8 @@ def reverse_invoice_partial_glob_meli():
                         # --------------------------AGREGAR CONDICIONAL PARA SABER SI TIENE NOTA DE CREDITO--------------------------
                         # Validamos si la SO ya tiene una nota de crédito creada
                         existing_credit_note = models.execute_kw(db_name, uid, password, 'account.move', 'search', [
-                            [['invoice_origin', '=', inv_origin_name], ['move_type', '=', 'out_refund'], ['state', 'not ilike', 'cancel']]])
+                            [['invoice_origin', '=', inv_origin_name], ['move_type', '=', 'out_refund'],
+                             ['state', 'not ilike', 'cancel']]])
                         if not existing_credit_note:
                             try:
                                 # Busca la órden de venta
@@ -674,7 +704,8 @@ def reverse_invoice_partial_glob_meli():
                                 sale_ref = sale_order['channel_order_reference']
                                 sale_team = sale_order['team_id'][0]
                                 # Busca el order line correspondiente de la orden de venta
-                                sale_line_id = models.execute_kw(db_name, uid, password, 'sale.order.line','search_read', [[['order_id', '=', sale_id]]])
+                                sale_line_id = models.execute_kw(db_name, uid, password, 'sale.order.line',
+                                                                 'search_read', [[['order_id', '=', sale_id]]])
                                 # Define los valores de la nota de crédito
                                 inv_int = int(inv_id)
                                 sale_int = int(sale_id)
@@ -710,7 +741,7 @@ def reverse_invoice_partial_glob_meli():
                                                     }
                                         refund_vals['invoice_line_ids'].append((0, 0, nc_lines))
                                     else:
-                                        #print(f"El producto {inv_product_id} no coincide con ninguna línea de la factura {inv_name}")
+                                        # print(f"El producto {inv_product_id} no coincide con ninguna línea de la factura {inv_name}")
                                         continue
                                 # Crea la nota de crédito
                                 create_nc = models.execute_kw(db_name, uid, password, 'account.move', 'create',
@@ -727,7 +758,8 @@ def reverse_invoice_partial_glob_meli():
                                 upd_sale = models.execute_kw(db_name, uid, password, 'sale.order', 'write',
                                                              [[sale_id], {'invoice_ids': [(4, 0, create_nc)]}])
                                 # Publicamos la nota de crédito
-                                upd_nc_state = models.execute_kw(db_name, uid, password, 'account.move', 'action_post', [create_nc])
+                                upd_nc_state = models.execute_kw(db_name, uid, password, 'account.move', 'action_post',
+                                                                 [create_nc])
                                 # Timbramos la nota de crédito
                                 # upd_nc_stamp = models.execute_kw(db_name, uid, password, 'account.move', 'button_process_edi_web_services',[create_nc])
                                 stamp_credit_note(models, db_name, uid, password, create_nc)
@@ -799,7 +831,7 @@ def reverse_invoice_partial_glob_meli():
             sheet['H{}'.format(i + 2)] = so_no_exist_in_invoice[i]
 
         # Guardar el archivo Excel en disco
-        excel_file = 'nc_parciales_glo_meli_' + today_date.strftime("%Y%m%d") + '.xlsx'
+        excel_file = 'nc_fullunit_glo_meli_' + today_date.strftime("%Y%m%d") + '.xlsx'
         workbook.save(excel_file)
 
         # Leer el contenido del archivo Excel
@@ -834,10 +866,11 @@ def reverse_invoice_partial_glob_meli():
         msg = MIMEMultipart()
         msg['From'] = 'sergio@wonderbrands.co'
         msg['To'] = ', '.join(['carlos.hinojosa@wonderbrands.co', 'sergio@wonderbrands.co', 'eric@wonderbrands.co',
-             'jeronimo@wonderbrands.co', 'greta@somos-reyes.com',
-             'contabilidad@somos-reyes.com', 'alex@wonderbrands.co', 'will@wonderbrands.co',
-             'sebastian@wonderbrands.co'])
-        msg['Subject'] = 'Script Automático MercadoLibre - Creación de notas de crédito para facturas GLOBALES / reembolsos PARCIALES'
+                               'jeronimo@wonderbrands.co', 'greta@somos-reyes.com',
+                               'contabilidad@somos-reyes.com', 'alex@wonderbrands.co', 'will@wonderbrands.co',
+                               'sebastian@wonderbrands.co'])
+        msg[
+            'Subject'] = 'Script Automático MercadoLibre - Creación de notas de crédito para facturas GLOBALES / reembolsos FULLUNIT'
         # Adjuntar el cuerpo del correo
         msg.attach(MIMEText(body, 'html'))
         # Adjuntar el archivo Excel al mensaje
@@ -850,23 +883,21 @@ def reverse_invoice_partial_glob_meli():
         smtpObj = smtplib.SMTP(smtp_server, smtp_port)
         smtpObj.starttls()
         smtpObj.login(smtp_username, smtp_password)
-        #smtpObj.sendmail(smtp_username, msg['To'], msg.as_string())
         smtpObj.send_message(msg)
     except Exception as i:
         print(f"Error: no se pudo enviar el correo: {i}")
-
-    print('----------------------------------------------------------------')
-    print('Proceso NC globales Meli completado')
-    print('----------------------------------------------------------------')
 
     # Cierre de conexiones
     progress_bar.close()
     smtpObj.quit()
     mycursor.close()
     mydb.close()
+
+
 @current_execution
 def reverse_invoice_partial_ind_amz():
-    print('** Notas de credito parciales AMAZON Individuales **')
+    global invoice_date
+    print('** Notas de credito fullunit AMAZON Individuales **')
     # Formato para query
     type_filter = 'INDIVIDUAL'
     marketplace_filter = 'AMAZON'
@@ -921,19 +952,19 @@ def reverse_invoice_partial_ind_amz():
                                'INDIVIDUAL' as type,
                                'AMAZON' as marketplace*/
                         FROM somos_reyes.odoo_new_account_move_aux b
-                        
+
                         LEFT JOIN odoo_new_sale_order c
                         ON b.invoice_origin = c.name
-                        
+
                         LEFT JOIN (SELECT a.order_id, max(STR_TO_DATE(fecha, '%m/%d/%Y')) 'refund_date', SUM(total - tarifas_de_amazon) * (-1) 'refunded_amt'
                                    FROM somos_reyes.amazon_payments_refunds a
                                    WHERE (total - tarifas_de_amazon) * (-1) > 0 AND STR_TO_DATE(fecha, '%m/%d/%Y') >= %s AND STR_TO_DATE(fecha, '%m/%d/%Y') <= %s
                                    GROUP BY 1) d
                         ON c.channel_order_id = d.order_id
-                        
+
                         LEFT JOIN (SELECT distinct invoice_origin FROM odoo_new_account_move_aux WHERE name like '%RINV%') e
                         ON c.name = e.invoice_origin
-                        
+
                         LEFT JOIN (SELECT order_name, MAX(product_id) 'product_id', SUM(product_qty) 'product_qty', COUNT(distinct product_id) 'cuenta', SUM(price_total) / SUM(product_qty) 'unit_price'
                                    FROM odoo_new_sale_order_line a
                                    LEFT JOIN odoo_new_product_product_bis b
@@ -942,16 +973,16 @@ def reverse_invoice_partial_ind_amz():
                                    GROUP BY 1
                                    HAVING cuenta = 1) f
                         ON c.name = f.order_name
-                        
+
                         WHERE d.order_id is not null
                         AND e.invoice_origin is null
-                        
+
                         AND c.amount_total - d.refunded_amt > 1 #QUE EL REEMBOLSO SEA MENOR A LA SO
                         AND (b.amount_total - c.amount_total < 1 AND b.amount_total - c.amount_total > (-1)) #QUE SEA INDIVIDUAL
                         AND f.order_name is not null
                         AND ROUND(d.refunded_amt / unit_price, 2) in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)
                         AND c.name in ({});
-                        """.format(placeholders), tuple(dates_list_params+list_orders))
+                        """.format(placeholders), tuple(dates_list_params + list_orders))
     invoice_records = mycursor.fetchall()
     # Lista de SO a las que se les creó una credit_notes
     so_modified = []
@@ -999,7 +1030,8 @@ def reverse_invoice_partial_ind_amz():
                         # --------------------------AGREGAR CONDICIONAL PARA SABER SI TIENE NOTA DE CREDITO--------------------------
                         # Validamos si la SO ya tiene una nota de crédito creada
                         existing_credit_note = models.execute_kw(db_name, uid, password, 'account.move', 'search', [
-                            [['invoice_origin', '=', inv_origin_name], ['move_type', '=', 'out_refund'], ['state', 'not ilike', 'cancel']]])
+                            [['invoice_origin', '=', inv_origin_name], ['move_type', '=', 'out_refund'],
+                             ['state', 'not ilike', 'cancel']]])
                         if not existing_credit_note:
                             try:
                                 # Busca la órden de venta
@@ -1065,7 +1097,8 @@ def reverse_invoice_partial_ind_amz():
                                 upd_sale = models.execute_kw(db_name, uid, password, 'sale.order', 'write',
                                                              [[sale_id], {'invoice_ids': [(4, 0, create_nc)]}])
                                 # Publicamos la nota de crédito
-                                upd_nc_state = models.execute_kw(db_name, uid, password, 'account.move', 'action_post', [create_nc])
+                                upd_nc_state = models.execute_kw(db_name, uid, password, 'account.move', 'action_post',
+                                                                 [create_nc])
                                 # Timbramos la nota de crédito
                                 # upd_nc_stamp = models.execute_kw(db_name, uid, password, 'account.move', 'button_process_edi_web_services',[create_nc])
                                 stamp_credit_note(models, db_name, uid, password, create_nc)
@@ -1137,7 +1170,7 @@ def reverse_invoice_partial_ind_amz():
             sheet['H{}'.format(i + 2)] = so_no_exist_in_invoice[i]
 
         # Guardar el archivo Excel en disco
-        excel_file = 'nc_parciales_ind_amz_' + today_date.strftime("%Y%m%d") + '.xlsx'
+        excel_file = 'nc_fullunit_ind_amz_' + today_date.strftime("%Y%m%d") + '.xlsx'
         workbook.save(excel_file)
 
         # Leer el contenido del archivo Excel
@@ -1172,10 +1205,11 @@ def reverse_invoice_partial_ind_amz():
         msg = MIMEMultipart()
         msg['From'] = 'sergio@wonderbrands.co'
         msg['To'] = ', '.join(['carlos.hinojosa@wonderbrands.co', 'sergio@wonderbrands.co', 'eric@wonderbrands.co',
-             'jeronimo@wonderbrands.co', 'greta@somos-reyes.com',
-             'contabilidad@somos-reyes.com', 'alex@wonderbrands.co', 'will@wonderbrands.co',
-             'sebastian@wonderbrands.co'])
-        msg['Subject'] = 'Script Automático Amazon - Creación de notas de crédito para facturas INDIVIDUALES / reembolsos PARCIALES'
+                               'jeronimo@wonderbrands.co', 'greta@somos-reyes.com',
+                               'contabilidad@somos-reyes.com', 'alex@wonderbrands.co', 'will@wonderbrands.co',
+                               'sebastian@wonderbrands.co'])
+        msg[
+            'Subject'] = 'Script Automático Amazon - Creación de notas de crédito para facturas INDIVIDUALES / reembolsos FULLUNIT'
         # Adjuntar el cuerpo del correo
         msg.attach(MIMEText(body, 'html'))
         # Adjuntar el archivo Excel al mensaje
@@ -1188,23 +1222,21 @@ def reverse_invoice_partial_ind_amz():
         smtpObj = smtplib.SMTP(smtp_server, smtp_port)
         smtpObj.starttls()
         smtpObj.login(smtp_username, smtp_password)
-        #smtpObj.sendmail(smtp_username, msg['To'], msg.as_string())
         smtpObj.send_message(msg)
     except Exception as i:
         print(f"Error: no se pudo enviar el correo: {i}")
-
-    print('----------------------------------------------------------------')
-    print('Proceso NC globales Meli completado')
-    print('----------------------------------------------------------------')
 
     # Cierre de conexiones
     progress_bar.close()
     smtpObj.quit()
     mycursor.close()
     mydb.close()
+
+
 @current_execution
 def reverse_invoice_partial_glob_amz():
-    print('** Notas de credito parciales AMAZON Globales **')
+    global invoice_date
+    print('** Notas de credito fullunit AMAZON Globales **')
     # Formato para query
     type_filter = 'GLOBAL'
     marketplace_filter = 'AMAZON'
@@ -1283,7 +1315,7 @@ def reverse_invoice_partial_glob_amz():
                         AND f.order_name is not null
                         AND ROUND(d.refunded_amt / unit_price, 2) in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)
                         AND c.name in ({});
-                        """.format(placeholders), tuple(dates_list_params+list_orders))
+                        """.format(placeholders), tuple(dates_list_params + list_orders))
     invoice_records = mycursor.fetchall()
     # Lista de SO a las que se les creó una credit_notes
     so_modified = []
@@ -1331,7 +1363,8 @@ def reverse_invoice_partial_glob_amz():
                         # --------------------------AGREGAR CONDICIONAL PARA SABER SI TIENE NOTA DE CREDITO--------------------------
                         # Validamos si la SO ya tiene una nota de crédito creada
                         existing_credit_note = models.execute_kw(db_name, uid, password, 'account.move', 'search', [
-                            [['invoice_origin', '=', inv_origin_name], ['move_type', '=', 'out_refund'], ['state', 'not ilike', 'cancel']]])
+                            [['invoice_origin', '=', inv_origin_name], ['move_type', '=', 'out_refund'],
+                             ['state', 'not ilike', 'cancel']]])
                         if not existing_credit_note:
                             try:
                                 # Busca la órden de venta
@@ -1397,7 +1430,8 @@ def reverse_invoice_partial_glob_amz():
                                 upd_sale = models.execute_kw(db_name, uid, password, 'sale.order', 'write',
                                                              [[sale_id], {'invoice_ids': [(4, 0, create_nc)]}])
                                 # Publicamos la nota de crédito
-                                upd_nc_state = models.execute_kw(db_name, uid, password, 'account.move', 'action_post', [create_nc])
+                                upd_nc_state = models.execute_kw(db_name, uid, password, 'account.move', 'action_post',
+                                                                 [create_nc])
                                 # Timbramos la nota de crédito
                                 # upd_nc_stamp = models.execute_kw(db_name, uid, password, 'account.move', 'button_process_edi_web_services',[create_nc])
                                 stamp_credit_note(models, db_name, uid, password, create_nc)
@@ -1469,7 +1503,7 @@ def reverse_invoice_partial_glob_amz():
             sheet['H{}'.format(i + 2)] = so_no_exist_in_invoice[i]
 
         # Guardar el archivo Excel en disco
-        excel_file = 'nc_parciales_glo_amz_' + today_date.strftime("%Y%m%d") + '.xlsx'
+        excel_file = 'nc_fullunit_glo_amz_' + today_date.strftime("%Y%m%d") + '.xlsx'
         workbook.save(excel_file)
 
         # Leer el contenido del archivo Excel
@@ -1504,10 +1538,11 @@ def reverse_invoice_partial_glob_amz():
         msg = MIMEMultipart()
         msg['From'] = 'sergio@wonderbrands.co'
         msg['To'] = ', '.join(['carlos.hinojosa@wonderbrands.co', 'sergio@wonderbrands.co', 'eric@wonderbrands.co',
-             'jeronimo@wonderbrands.co', 'greta@somos-reyes.com',
-             'contabilidad@somos-reyes.com', 'alex@wonderbrands.co', 'will@wonderbrands.co',
-             'sebastian@wonderbrands.co'])
-        msg['Subject'] = 'Script Automático Amazon - Creación de notas de crédito para facturas GLOBALES / reembolsos PARCIALES'
+                               'jeronimo@wonderbrands.co', 'greta@somos-reyes.com',
+                               'contabilidad@somos-reyes.com', 'alex@wonderbrands.co', 'will@wonderbrands.co',
+                               'sebastian@wonderbrands.co'])
+        msg[
+            'Subject'] = 'Script Automático Amazon - Creación de notas de crédito para facturas GLOBALES / reembolsos FULLUNIT'
         # Adjuntar el cuerpo del correo
         msg.attach(MIMEText(body, 'html'))
         # Adjuntar el archivo Excel al mensaje
@@ -1520,14 +1555,9 @@ def reverse_invoice_partial_glob_amz():
         smtpObj = smtplib.SMTP(smtp_server, smtp_port)
         smtpObj.starttls()
         smtpObj.login(smtp_username, smtp_password)
-        #smtpObj.sendmail(smtp_username, msg['To'], msg.as_string())
         smtpObj.send_message(msg)
     except Exception as i:
         print(f"Error: no se pudo enviar el correo: {i}")
-
-    print('----------------------------------------------------------------')
-    print('Proceso NC globales Meli completado')
-    print('----------------------------------------------------------------')
 
     # Cierre de conexiones
     progress_bar.close()
@@ -1535,20 +1565,22 @@ def reverse_invoice_partial_glob_amz():
     mycursor.close()
     mydb.close()
 
-def stamp_credit_note(models,db_name,uid,password, credit_note_id):
+
+def stamp_credit_note(models, db_name, uid, password, credit_note_id):
     # Timbrar la Nota de credito (certificar)
     # invoice_stamp = models.execute_kw(db_name, uid, password, 'account.move', 'action_l10n_mx_edi_invoice', [[invoice_id]])
     try:
-        #print('----------------------------------------------------------------')
-        #print('Timbrando nota de credito')
+        # print('----------------------------------------------------------------')
+        # print('Timbrando nota de credito')
         credit_note_stamp = models.execute_kw(db_name, uid, password, 'account.move', 'action_process_edi_web_services',
                                               [[credit_note_id]])
-        #print(f"Nota de crédito timbrada: {credit_note_stamp}")
+        # print(f"Nota de crédito timbrada: {credit_note_stamp}")
     except Exception as e:
         pass
-        #print('----------------------------------------------------------------')
-        #print("Nota de credito timbrada")
-    #print('----------------------------------------------------------------')
+        # print('----------------------------------------------------------------')
+        # print("Nota de credito timbrada")
+    # print('----------------------------------------------------------------')
+
 
 if __name__ == "__main__":
     # Numero de workers = numero de funciones (para este script)

@@ -1,4 +1,4 @@
-import set666 as creds
+from unit_tools import set666 as creds
 import MySQLdb # mysqlclient
 import pandas as pd
 import smtplib
@@ -10,7 +10,7 @@ import base64
 import os
 from datetime import datetime
 import time as tm
-import prepare_folders as prep
+from unit_tools import prepare_folders as prep
 
 __description__ = """
         Este script obtiene los resultados de las queries de Mercado Libre y Amazon tanto totales como parciales (Individuales y Globales),
@@ -83,7 +83,11 @@ def send_email_with_attachments(sender_email, sender_password, to_recipients, cc
 
 def init_process(start_date,end_date, version_files=''):
 
-    month, year = prep.get_dates()
+    try:
+        month, year = month_, year_
+    except NameError:
+        month, year = prep.get_dates()
+
     year = str(year)
 
     _start_date = datetime.strptime(start_date, '%d-%m-%Y')
@@ -95,14 +99,14 @@ def init_process(start_date,end_date, version_files=''):
     if device == 'mac':
         csv_path_ML_Totales = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{year}/{month}/Notas_de_credito_totales_ML.csv'
         csv_path_ML_Parciales = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{year}/{month}/Notas_de_credito_parciales_ML.csv'
-        csv_path_AMZ_Totales = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{year}/{month}/Notas_de_credito_totales_AMAZON.csv'
-        csv_path_AMZ_Parciales = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{year}/{month}/Notas_de_credito_parciales_AMAZON.csv'
+        csv_path_AMZ_Totales = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{year}/{month}/Notas_de_credito_totales_AMZ.csv'
+        csv_path_AMZ_Parciales = f'/Users/sergio/Documents/Trabajo/Wonderbrands/Finanzas/{year}/{month}/Notas_de_credito_parciales_AMZ.csv'
 
     elif device == 'dell':
         csv_path_ML_Totales = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{year}\{month}\Notas_de_credito_totales_ML.csv'
         csv_path_ML_Parciales = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{year}\{month}\Notas_de_credito_parciales_ML.csv'
-        csv_path_AMZ_Totales = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{year}\{month}\Notas_de_credito_totales_AMAZON.csv'
-        csv_path_AMZ_Parciales = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{year}\{month}\Notas_de_credito_parciales_AMAZON.csv'
+        csv_path_AMZ_Totales = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{year}\{month}\Notas_de_credito_totales_AMZ.csv'
+        csv_path_AMZ_Parciales = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{year}\{month}\Notas_de_credito_parciales_AMZ.csv'
 
     elif device == 'rog':
         base_path = 'PENDIENTE'
@@ -111,22 +115,25 @@ def init_process(start_date,end_date, version_files=''):
 
     #print(_start_date_ML, _end_date_ML, _start_date, _end_date, _start_date_AMZ, _end_date_AMZ)
 
+    # ------------------------------------------------------------------------------------------------------------
     # MERCADO-LIBRE TOTALES
     query_template_ML_Totales = f"""
     #MERCADO-LIBRE TOTALES
+    
     #INDIVIDUALES
     SELECT c.name,
            ifnull(d.order_id, dd.pack_id) 'order_id_or_pack_id',
            c.channel_order_reference 'marketplace reference',
            b.amount_total 'total_factura',
            b.amount_untaxed 'subtotal_factura',
-           ifnull(d.refunded_amt, dd.refunded_amt) 'ml_refunded_amount',
+           b.amount_total 'ml_refunded_amount', ### CAMBIO: AHORA EL MONTO A REEMBOLSAR ES IGUAL AL MONTO DE LA FACTURA YA QUE ESTAMOS TOMANDO TODOS LOS CASOS EN DONDE EL MONTO REEMBOLSADO ES MAYOR O IGUAL A LA SO.
            ifnull(d.payment_date_last_modified, dd.payment_date_last_modified) 'payment_date_last_modified',
            b.invoice_partner_display_name 'cliente',
            b.name,
            b.id 'account_move_id',
            'INDIVIDUAL' as type,
            'MERCADO LIBRE' as marketplace
+    
     FROM somos_reyes.odoo_new_account_move_aux b
     LEFT JOIN somos_reyes.odoo_new_sale_order c
     ON b.invoice_origin = c.name
@@ -134,38 +141,48 @@ def init_process(start_date,end_date, version_files=''):
                FROM somos_reyes.ml_order_payments a
                LEFT JOIN somos_reyes.ml_order_update b
                ON a.order_id = b.order_id
-               WHERE refunded_amt > 0 AND b.pack_id = 'None' AND date(payment_date_last_modified) >= '{_start_date}' AND date(payment_date_last_modified) <= '{_end_date}'
+               WHERE refunded_amt > 0
+                 AND b.pack_id = 'None'
+                 AND date(payment_date_last_modified) >= '{_start_date}'
+                 AND date(payment_date_last_modified) <= '{_end_date}'
+                 AND a.status_detail <> 'bpp_covered'
                GROUP BY 1) d
     ON c.channel_order_id = d.order_id
     LEFT JOIN (SELECT a.pack_id, max(payment_date_last_modified) 'payment_date_last_modified', SUM(b.paid_amt) 'paid_amt', SUM(b.refunded_amt) 'refunded_amt', SUM(shipping_amt) 'shipping_amt'
-    FROM somos_reyes.ml_order_update a
-    LEFT JOIN somos_reyes.ml_order_payments b
-    ON a.order_id = b.order_id
-    WHERE b.refunded_amt > 0 AND a.pack_id <> 'None' AND date(payment_date_last_modified) >= '{_start_date}' AND date(payment_date_last_modified) <= '{_end_date}'
-    GROUP BY 1) dd
+               FROM somos_reyes.ml_order_update a
+               LEFT JOIN somos_reyes.ml_order_payments b
+               ON a.order_id = b.order_id
+               WHERE b.refunded_amt > 0
+                 AND a.pack_id <> 'None'
+                 AND date(payment_date_last_modified) >= '{_start_date}'
+                 AND date(payment_date_last_modified) <= '{_end_date}'
+                 AND b.status_detail <> 'bpp_covered'
+               GROUP BY 1) dd
     ON c.yuju_pack_id = dd.pack_id
     LEFT JOIN (SELECT distinct invoice_origin FROM somos_reyes.odoo_new_account_move_aux WHERE name like '%RINV%') e
     ON c.name = e.invoice_origin
     WHERE (d.order_id is not null or dd.pack_id is not null)
     AND e.invoice_origin is null
-    AND ((ifnull(d.refunded_amt, dd.refunded_amt) - b.amount_total < 1 AND ifnull(d.refunded_amt, dd.refunded_amt) - b.amount_total > -1)
-    OR (ifnull(d.refunded_amt - d.shipping_amt, dd.refunded_amt - dd.shipping_amt) - b.amount_total < 1
-    AND ifnull(d.refunded_amt - d.shipping_amt, dd.refunded_amt - dd.shipping_amt) - b.amount_total > -1))
-
+    AND invoice_partner_display_name <> 'Público en General'
+    AND (ifnull(d.refunded_amt, dd.refunded_amt) - c.amount_total >= -1 OR ifnull(d.refunded_amt - d.shipping_amt, dd.refunded_amt - dd.shipping_amt) - c.amount_total >= -1) # Que el monto del reembolso sea igual o mayor que la SO.
+    
+    
     UNION ALL
+    
     #GLOBALES
     SELECT c.name,
            ifnull(d.order_id, dd.pack_id) 'order_id_or_pack_id',
            c.channel_order_reference 'marketplace reference',
            b.amount_total 'total_factura',
            b.amount_untaxed 'subtotal_factura',
-           ifnull(d.refunded_amt, dd.refunded_amt) 'ml_refunded_amount',
+           c.amount_total 'ml_refunded_amount', ### CAMBIO: AHORA EL MONTO A REEMBOLSAR ES IGUAL AL MONTO DE LA FACTURA YA QUE ESTAMOS TOMANDO TODOS LOS CASOS EN DONDE EL MONTO REEMBOLSADO ES MAYOR O IGUAL A LA SO.
            ifnull(d.payment_date_last_modified, dd.payment_date_last_modified) 'payment_date_last_modified',
            b.invoice_partner_display_name 'cliente',
            b.name,
            b.id 'account_move_id',
            'GLOBAL' as type,
            'MERCADO LIBRE' as marketplace
+    
     FROM somos_reyes.odoo_new_account_move_aux b
     LEFT JOIN somos_reyes.odoo_new_sale_order c
     ON SUBSTRING_INDEX(SUBSTRING_INDEX(invoice_ids, ']', 1), '[', -1) = b.id
@@ -173,31 +190,37 @@ def init_process(start_date,end_date, version_files=''):
                FROM somos_reyes.ml_order_payments a
                LEFT JOIN somos_reyes.ml_order_update b
                ON a.order_id = b.order_id
-               WHERE refunded_amt > 0 AND b.pack_id = 'None' AND date(payment_date_last_modified) >= '{_start_date}' AND date(payment_date_last_modified) <= '{_end_date}'
+               WHERE refunded_amt > 0
+                 AND b.pack_id = 'None'
+                 AND date(payment_date_last_modified) >= '{_start_date}'
+                 AND date(payment_date_last_modified) <= '{_end_date}'
+                 AND a.status_detail <> 'bpp_covered'
                GROUP BY 1) d
     ON c.channel_order_id = d.order_id
     LEFT JOIN (SELECT a.pack_id, max(payment_date_last_modified) 'payment_date_last_modified', SUM(b.paid_amt) 'paid_amt', SUM(b.refunded_amt) 'refunded_amt', SUM(shipping_amt) 'shipping_amt'
-    FROM somos_reyes.ml_order_update a
-    LEFT JOIN somos_reyes.ml_order_payments b
-    ON a.order_id = b.order_id
-    WHERE b.refunded_amt > 0 AND a.pack_id <> 'None' AND date(payment_date_last_modified) >= '{_start_date}' AND date(payment_date_last_modified) <= '{_end_date}'
-    GROUP BY 1) dd
+               FROM somos_reyes.ml_order_update a
+               LEFT JOIN somos_reyes.ml_order_payments b
+               ON a.order_id = b.order_id
+               WHERE b.refunded_amt > 0
+                 AND a.pack_id <> 'None'
+                 AND date(payment_date_last_modified) >= '{_start_date}'
+                 AND date(payment_date_last_modified) <= '{_end_date}'
+                 AND b.status_detail <> 'bpp_covered'
+               GROUP BY 1) dd
     ON c.yuju_pack_id = dd.pack_id
     LEFT JOIN (SELECT distinct invoice_origin FROM somos_reyes.odoo_new_account_move_aux WHERE name like '%RINV%') e
     ON c.name = e.invoice_origin
     WHERE (d.order_id is not null or dd.pack_id is not null)
     AND e.invoice_origin is null
-    AND invoice_partner_display_name = 'PÚBLICO EN GENERAL'
-    AND (ifnull(d.refunded_amt, dd.refunded_amt) - b.amount_total > 1 OR ifnull(d.refunded_amt, dd.refunded_amt) - b.amount_total < -1)
-    AND (ifnull(d.refunded_amt - d.shipping_amt, dd.refunded_amt - dd.shipping_amt) - b.amount_total > 1 OR ifnull(d.refunded_amt - d.shipping_amt, dd.refunded_amt - dd.shipping_amt) - b.amount_total < -1)
-    AND ((ifnull(d.refunded_amt, dd.refunded_amt) - c.amount_total < 1 AND ifnull(d.refunded_amt, dd.refunded_amt) - c.amount_total > -1)
-    OR (ifnull(d.refunded_amt - d.shipping_amt, dd.refunded_amt - dd.shipping_amt) - c.amount_total < 1
-    AND ifnull(d.refunded_amt - d.shipping_amt, dd.refunded_amt - dd.shipping_amt) - c.amount_total > -1))
+    AND invoice_partner_display_name = 'Público en General'
+    AND (ifnull(d.refunded_amt, dd.refunded_amt) - c.amount_total >= -1 OR ifnull(d.refunded_amt - d.shipping_amt, dd.refunded_amt - dd.shipping_amt) - c.amount_total >= -1) # Que el monto del reembolso sea igual o mayor que la SO.
+    ;
     """
 
     query_name = 'MERCADO-LIBRE TOTALES'
     fetch_data(query_name, query_template_ML_Totales, csv_path_ML_Totales)
 
+    # ------------------------------------------------------------------------------------------------------------
     # MERCADO-LIBRE PARCIALES
     query_template_ML_Parciales = f"""
     #MERCADO-LIBRE PARCIALES
@@ -233,6 +256,7 @@ def init_process(start_date,end_date, version_files=''):
                LEFT JOIN somos_reyes.ml_order_update b
                ON a.order_id = b.order_id
                WHERE refunded_amt > 0 AND b.pack_id = 'None' AND date(payment_date_last_modified) >= '{_start_date}' AND date(payment_date_last_modified) <= '{_end_date}'
+               AND status_detail <> 'bpp_covered'
                GROUP BY 1, 2
                ) d
     ON c.channel_order_id = d.order_id
@@ -248,6 +272,7 @@ def init_process(start_date,end_date, version_files=''):
     LEFT JOIN somos_reyes.ml_order_payments b
     ON a.order_id = b.order_id
     WHERE b.refunded_amt > 0 AND a.pack_id <> 'None' AND date(payment_date_last_modified) >= '{_start_date}' AND date(payment_date_last_modified) <= '{_end_date}'
+    AND b.status_detail <> 'bpp_covered'
     GROUP BY 1, 2
     ) dd
     ON c.yuju_pack_id = dd.pack_id
@@ -270,6 +295,7 @@ def init_process(start_date,end_date, version_files=''):
                LEFT JOIN somos_reyes.ml_order_update b
                ON a.order_id = b.order_id
                WHERE refunded_amt > 0 AND b.pack_id = 'None' AND date(payment_date_last_modified) >= '{_start_date}' AND date(payment_date_last_modified) <= '{_end_date}'
+               AND status_detail <> 'bpp_covered'
                GROUP BY 1) t
     ON c.channel_order_id = t.order_id
 
@@ -280,6 +306,7 @@ def init_process(start_date,end_date, version_files=''):
     LEFT JOIN somos_reyes.ml_order_payments b
     ON a.order_id = b.order_id
     WHERE b.refunded_amt > 0 AND a.pack_id <> 'None' AND date(payment_date_last_modified) >= '{_start_date}' AND date(payment_date_last_modified) <= '{_end_date}'
+    AND b.status_detail <> 'bpp_covered'
     GROUP BY 1
     ) tt
     ON c.yuju_pack_id = tt.pack_id
@@ -325,6 +352,7 @@ def init_process(start_date,end_date, version_files=''):
                LEFT JOIN somos_reyes.ml_order_update b
                ON a.order_id = b.order_id
                WHERE refunded_amt > 0 AND b.pack_id = 'None' AND date(payment_date_last_modified) >= '{_start_date}' AND date(payment_date_last_modified) <= '{_end_date}'
+               AND status_detail <> 'bpp_covered'
                GROUP BY 1, 2
                ) d
     ON c.channel_order_id = d.order_id
@@ -339,6 +367,7 @@ def init_process(start_date,end_date, version_files=''):
     LEFT JOIN somos_reyes.ml_order_payments b
     ON a.order_id = b.order_id
     WHERE b.refunded_amt > 0 AND a.pack_id <> 'None' AND date(payment_date_last_modified) >= '{_start_date}' AND date(payment_date_last_modified) <= '{_end_date}'
+    AND b.status_detail <> 'bpp_covered'
     GROUP BY 1, 2
     ) dd
     ON c.yuju_pack_id = dd.pack_id
@@ -358,6 +387,7 @@ def init_process(start_date,end_date, version_files=''):
                LEFT JOIN somos_reyes.ml_order_update b
                ON a.order_id = b.order_id
                WHERE refunded_amt > 0 AND b.pack_id = 'None' AND date(payment_date_last_modified) >= '{_start_date}' AND date(payment_date_last_modified) <= '{_end_date}'
+               AND status_detail <> 'bpp_covered'
                GROUP BY 1) t
     ON c.channel_order_id = t.order_id
 
@@ -368,6 +398,7 @@ def init_process(start_date,end_date, version_files=''):
     LEFT JOIN somos_reyes.ml_order_payments b
     ON a.order_id = b.order_id
     WHERE b.refunded_amt > 0 AND a.pack_id <> 'None' AND date(payment_date_last_modified) >= '{_start_date}' AND date(payment_date_last_modified) <= '{_end_date}'
+    AND b.status_detail <> 'bpp_covered'
     GROUP BY 1
     ) tt
     ON c.yuju_pack_id = tt.pack_id
@@ -384,75 +415,79 @@ def init_process(start_date,end_date, version_files=''):
     query_name = 'MERCADO-LIBRE PARCIALES'
     fetch_data(query_name, query_template_ML_Parciales, csv_path_ML_Parciales)
 
+    # ------------------------------------------------------------------------------------------------------------
     # AMAZON TOTALES
     query_template_AMZ_Totales = f"""
-    #AMAZON TOTALES
+    # AMAZON TOTALES
+
     #INDIVIDUALES
     SELECT c.name,
-           d.order_id 'order_id',
-           c.channel_order_reference 'marketplace reference',
-           b.amount_total 'total_factura',
-           b.amount_untaxed 'subtotal_factura',
-           d.refunded_amt,
-           d.refund_date,
-           b.invoice_partner_display_name 'cliente',
-           b.name,
-           b.id 'account_move_id',
-           'INDIVIDUAL' as type,
-           'AMAZON' as marketplace
-    FROM somos_reyes.odoo_new_account_move_aux b
-
-    LEFT JOIN somos_reyes.odoo_new_sale_order c
-    ON b.invoice_origin = c.name
-
-    LEFT JOIN (SELECT a.order_id, max(STR_TO_DATE(fecha, '%m/%d/%Y')) 'refund_date', SUM(total - tarifas_de_amazon) * (-1) 'refunded_amt'
-               FROM somos_reyes.amazon_payments_refunds a
-               WHERE (total - tarifas_de_amazon) * (-1) > 0 AND STR_TO_DATE(fecha, '%m/%d/%Y') >= '{_start_date}' AND STR_TO_DATE(fecha, '%m/%d/%Y') <= '{_end_date}'
-               GROUP BY 1) d
-    ON c.channel_order_id = d.order_id
-
-    LEFT JOIN (SELECT distinct invoice_origin FROM somos_reyes.odoo_new_account_move_aux WHERE name like '%RINV%') e
-    ON c.name = e.invoice_origin
-
-    WHERE d.order_id is not null
-    AND e.invoice_origin is null
-    AND d.refunded_amt - b.amount_total < 1 AND d.refunded_amt - b.amount_total > -1
-
-    UNION ALL
-
-    #GLOBALES
-    SELECT c.name,
-           d.order_id,
-           c.channel_order_reference 'marketplace reference',
-           b.amount_total 'total_factura',
-           b.amount_untaxed 'subtotal_factura',
-           d.refunded_amt,
-           refund_date,
-           b.invoice_partner_display_name 'cliente',
-           b.name,
-           b.id 'account_move_id',
-           'GLOBAL' as type,
-           'AMAZON' as marketplace
-    FROM somos_reyes.odoo_new_account_move_aux b
-    LEFT JOIN somos_reyes.odoo_new_sale_order c
-    ON SUBSTRING_INDEX(SUBSTRING_INDEX(invoice_ids, ']', 1), '[', -1) = b.id
-    LEFT JOIN (SELECT a.order_id, max(STR_TO_DATE(fecha, '%m/%d/%Y')) 'refund_date', SUM(total - tarifas_de_amazon) * (-1) 'refunded_amt'
-               FROM somos_reyes.amazon_payments_refunds a
-               WHERE (total - tarifas_de_amazon) * (-1) > 0 AND STR_TO_DATE(fecha, '%m/%d/%Y') >= '{_start_date}' AND STR_TO_DATE(fecha, '%m/%d/%Y') <= '{_end_date}'
-               GROUP BY 1) d
-    ON c.channel_order_id = d.order_id
-    LEFT JOIN (SELECT distinct invoice_origin FROM somos_reyes.odoo_new_account_move_aux WHERE name like '%RINV%') e
-    ON c.name = e.invoice_origin
-    WHERE d.order_id is not null
-    AND e.invoice_origin is null
-    AND invoice_partner_display_name = 'PÚBLICO EN GENERAL'
-    AND (d.refunded_amt - b.amount_total > 1 OR d.refunded_amt - b.amount_total < -1)
-    AND d.refunded_amt - c.amount_total < 1 AND d.refunded_amt - c.amount_total > -1;
+               d.order_id 'order_id',
+               c.channel_order_reference 'marketplace reference',
+               b.amount_total 'total_factura',
+               b.amount_untaxed 'subtotal_factura',
+               b.amount_total 'ml_refunded_amount', ### CAMBIO: AHORA EL MONTO A REEMBOLSAR ES IGUAL AL MONTO DE LA FACTURA YA QUE ESTAMOS TOMANDO TODOS LOS CASOS EN DONDE EL MONTO REEMBOLSADO ES MAYOR O IGUAL A LA SO.
+               d.refund_date,
+               b.invoice_partner_display_name 'cliente',
+               b.name,
+               b.id 'account_move_id',
+               'INDIVIDUAL' as type,
+               'AMAZON' as marketplace
+        FROM somos_reyes.odoo_new_account_move_aux b
+    
+        LEFT JOIN somos_reyes.odoo_new_sale_order c
+        ON b.invoice_origin = c.name
+    
+        LEFT JOIN (SELECT a.order_id, max(STR_TO_DATE(fecha, '%m/%d/%Y')) 'refund_date', SUM(total - tarifas_de_amazon) * (-1) 'refunded_amt'
+                   FROM somos_reyes.amazon_payments_refunds a
+                   WHERE (total - tarifas_de_amazon) * (-1) > 0 AND STR_TO_DATE(fecha, '%m/%d/%Y') >= '{_start_date}' AND STR_TO_DATE(fecha, '%m/%d/%Y') <= '{_end_date}'
+                   GROUP BY 1) d
+        ON c.channel_order_id = d.order_id
+    
+        LEFT JOIN (SELECT distinct invoice_origin FROM somos_reyes.odoo_new_account_move_aux WHERE name like '%RINV%') e
+        ON c.name = e.invoice_origin
+    
+        WHERE d.order_id is not null
+        AND e.invoice_origin is null
+        AND invoice_partner_display_name <> 'Público en General'
+        AND d.refunded_amt - c.amount_total >= -1 # Que el monto del reembolso sea igual o mayor que la SO.
+    
+        UNION ALL
+    
+        #GLOBALES
+        SELECT c.name,
+               d.order_id,
+               c.channel_order_reference 'marketplace reference',
+               b.amount_total 'total_factura',
+               b.amount_untaxed 'subtotal_factura',
+               c.amount_total 'ml_refunded_amount', ### CAMBIO: AHORA EL MONTO A REEMBOLSAR ES IGUAL AL MONTO DE LA FACTURA YA QUE ESTAMOS TOMANDO TODOS LOS CASOS EN DONDE EL MONTO REEMBOLSADO ES MAYOR O IGUAL A LA SO.
+               refund_date,
+               b.invoice_partner_display_name 'cliente',
+               b.name,
+               b.id 'account_move_id',
+               'GLOBAL' as type,
+               'AMAZON' as marketplace
+        FROM somos_reyes.odoo_new_account_move_aux b
+        LEFT JOIN somos_reyes.odoo_new_sale_order c
+        ON SUBSTRING_INDEX(SUBSTRING_INDEX(invoice_ids, ']', 1), '[', -1) = b.id
+        LEFT JOIN (SELECT a.order_id, max(STR_TO_DATE(fecha, '%m/%d/%Y')) 'refund_date', SUM(total - tarifas_de_amazon) * (-1) 'refunded_amt'
+                   FROM somos_reyes.amazon_payments_refunds a
+                   WHERE (total - tarifas_de_amazon) * (-1) > 0 AND STR_TO_DATE(fecha, '%m/%d/%Y') >= '{_start_date}' AND STR_TO_DATE(fecha, '%m/%d/%Y') <= '{_end_date}'
+                   GROUP BY 1) d
+        ON c.channel_order_id = d.order_id
+        LEFT JOIN (SELECT distinct invoice_origin FROM somos_reyes.odoo_new_account_move_aux WHERE name like '%RINV%') e
+        ON c.name = e.invoice_origin
+        WHERE d.order_id is not null
+        AND e.invoice_origin is null
+        AND invoice_partner_display_name = 'Público en General'
+        AND d.refunded_amt - c.amount_total >= -1  # Que el monto del reembolso sea igual o mayor que la SO.
+    ;
     """
 
     query_name = 'AMAZON TOTALES'
     fetch_data(query_name, query_template_AMZ_Totales, csv_path_AMZ_Totales)
 
+    # ------------------------------------------------------------------------------------------------------------
     # AMAZON PARCIALES
     query_template_AMZ_Parciales = f"""
     #AMAZON PARCIALES
@@ -549,9 +584,9 @@ def init_process(start_date,end_date, version_files=''):
     # Información del correo electrónico
     sender_email = 'sergio@wonderbrands.co'
     sender_password = creds.gmail_password
-    recipients = ['carlos.hinojosa@wonderbrands.co']
-    cc_recipients = ['rosalba@wonderbrands.co', 'greta@somos-reyes.com', 'alex@wonderbrands.co', 'will@wonderbrands.co', 'eric@wonderbrands.co', 'sebastian@wonderbrands.co']
-    #recipients = ['sergio@wonderbrands.co','sergiogil.fiein@gmail.com','lili.men.mor11@gmail.com']
+    recipients = ['jeronimo@wonderbrands.co', 'carlos.hinojosa@wonderbrands.co']
+    cc_recipients = ['greta@somos-reyes.com', 'alex@wonderbrands.co', 'will@wonderbrands.co', 'eric@wonderbrands.co', 'sebastian@wonderbrands.co', 'sergio@wonderbrands.co']
+    #recipients = ['sergio@wonderbrands.co']
     #cc_recipients = ['sergio.gil.guerrero.garcia@gmail.com']
     subject = f'{version_files}*Notas de Crédito a generar del {start_date} al {end_date}*'
     body = '''\
@@ -574,17 +609,30 @@ def init_process(start_date,end_date, version_files=''):
 if __name__ == '__main__':
 
     # ************************************************************************
+    # ************************************************************************
     device='dell' # mac, dell, rog
 
     # FECHAS   dia-mes-año
-    start_date = '26-06-2025'
-    end_date = '27-07-2025'
+    start_date = '01-01-2025'
+    end_date = '31-10-2025'
 
-    first_version=False
+    first_version = True
+
+    # Manual si se realiza para el mes anterior a la fecha de hoy, comentar si NO.
+    month_ = 'Octubre'
+    year_ = '2025'
+
+    # ************************************************************************
     # ************************************************************************
 
     # Se crean las carpetas a fecha de hoy para el proceso del cierre contable.
-    prep.create_folders(device=device)
+    try:
+        # Si month_ y year_ existen
+        prep.create_folders(device=device, date=[month_, year_])
+    except NameError:
+        hoy = datetime.today()
+        prep.create_folders(device=device)
+
     tm.sleep(2)
     init_process(start_date,end_date) if first_version else init_process(start_date, end_date, ' VERSIÓN CORREGIDA ')
 

@@ -52,6 +52,8 @@ print('Fecha:' + today_date.strftime("%Y-%m-%d %H:%M:%S"))
 # ARCHIVO DE CONFIGURACIÓN
 config_file = 'config.json'
 # ***********************************************
+global invoice_date
+# ***********************************************
 
 config_file_name = rf'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Repos\wb_odoo_external_api\config\{config_file}'
 l10n_mx_edi_payment_method_id = 3
@@ -59,7 +61,7 @@ l10n_mx_edi_usage = 'G02'
 
 #FECHAS DEL PERIODO
 start_date_str = datetime.date(2025, 1, 1).strftime("%Y-%m-%d")
-end_date_str = datetime.date(2025, 8, 27).strftime("%Y-%m-%d")
+end_date_str = datetime.date(2025, 10, 31).strftime("%Y-%m-%d")
 # ***********************************************
 
 month_executed, year_executed = prep.get_dates()
@@ -67,9 +69,9 @@ year_executed = str(year_executed)
 
 # ----------------------------------------------------------------
 # Mes y año manual
-# month_executed = 'Febrero'
-# # year_executed = '2024'
-# invoice_date = '2025-02-28'
+month_executed = 'Octubre'
+year_executed = '2025'
+invoice_date_manual = '2025-10-31' # año-mes-día
 # ----------------------------------------------------------------
 
 
@@ -305,7 +307,9 @@ def reverse_invoice_partial_ind_meli():
                                 inv_int = int(inv_id)
                                 sale_int = int(sale_id)
 
-                                if 'invoice_date' not in globals():
+                                try:
+                                    invoice_date = invoice_date_manual
+                                except NameError:
                                     invoice_date = datetime.datetime.now().strftime('%Y-%m-%d')
 
                                 refund_vals = {
@@ -679,7 +683,9 @@ def reverse_invoice_partial_glob_meli():
                                 inv_int = int(inv_id)
                                 sale_int = int(sale_id)
 
-                                if 'invoice_date' not in globals():
+                                try:
+                                    invoice_date = invoice_date_manual
+                                except NameError:
                                     invoice_date = datetime.datetime.now().strftime('%Y-%m-%d')
 
                                 refund_vals = {
@@ -1017,7 +1023,9 @@ def reverse_invoice_partial_ind_amz():
                                 inv_int = int(inv_id)
                                 sale_int = int(sale_id)
 
-                                if 'invoice_date' not in globals():
+                                try:
+                                    invoice_date = invoice_date_manual
+                                except NameError:
                                     invoice_date = datetime.datetime.now().strftime('%Y-%m-%d')
 
                                 refund_vals = {
@@ -1349,7 +1357,9 @@ def reverse_invoice_partial_glob_amz():
                                 inv_int = int(inv_id)
                                 sale_int = int(sale_id)
 
-                                if 'invoice_date' not in globals():
+                                try:
+                                    invoice_date = invoice_date_manual
+                                except NameError:
                                     invoice_date = datetime.datetime.now().strftime('%Y-%m-%d')
 
                                 refund_vals = {

@@ -52,8 +52,8 @@ print('Insert downloaded items in db.')
 print(time.time() - start_time)
 print('')
 
-yday = 20250728
-dbfore = 20250728
+yday = 20250929
+dbfore = 20250930
 search_date = yday
 
 # ******************
@@ -64,7 +64,7 @@ year = str(year)
 
 # ----------------------------------------------------------------
 ### Mes y año manual si se ejecuta en el mes posterior pero para efecto contable del mes anterior.
-month = "Julio"
+month = "Octubre"
 year = "2025"
 # ----------------------------------------------------------------
 

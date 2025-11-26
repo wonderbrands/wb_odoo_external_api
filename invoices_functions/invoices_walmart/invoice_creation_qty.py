@@ -33,8 +33,8 @@ import email
 import datetime
 import time as tm
 
-from Test import extract_orders as e_o
-from Test import prepare_folders as prep
+from unit_tools import extract_orders as e_o
+from unit_tools import prepare_folders as prep
 
 print('================================================================')
 print('BIENVENIDO AL PROCESO DE AUTOFACTURACIÓN WALMART')
@@ -65,9 +65,9 @@ month_ = str(prep.get_month_number()) # Número del mes. Ejemplo para enero: '01
 ### Mes y año MANUAL si se ejecuta en el mes posterior pero para efecto contable del mes anterior.
 
 year_executed = '2025'
-month_executed = "Julio"
-month_ = "07"
-invoice_date = '2025-07-31'
+month_executed = "Octubre"
+month_ = "10"
+invoice_date = '2025-10-31'
 # ----------------------------------------------------------------
 
 if device == 'dell':

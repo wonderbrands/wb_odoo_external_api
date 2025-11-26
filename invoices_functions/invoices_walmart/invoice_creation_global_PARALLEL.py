@@ -33,9 +33,9 @@ import email
 import datetime
 from concurrent.futures import ThreadPoolExecutor
 
-from Test import extract_orders as e_o
+from unit_tools import extract_orders as e_o
 
-from Test import prepare_folders as prep
+from unit_tools import prepare_folders as prep
 
 print('================================================================')
 print('BIENVENIDO AL PROCESO DE FACTURACIÓN WALMART')
@@ -366,9 +366,9 @@ if __name__ == "__main__":
 
     # ----------------------------------------------------------------
     ### Mes y año MANUAL si se ejecuta en el mes posterior pero para efecto contable del mes anterior.
-    month = "Julio"
+    month = "Octubre"
     year_executed = "2025"
-    invoice_date = '2025-07-31'
+    invoice_date = '2025-10-31'
     # ----------------------------------------------------------------
 
     print('******************')

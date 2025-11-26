@@ -48,8 +48,8 @@ def get_dates():
 def get_month_number():
     return datetime.now().strftime('%m')
 @print_info
-def create_folders(device='dell'):  # mac, dell, rog
-    dates_ = get_dates()
+def create_folders(device='dell', date=False):  # mac, dell, rog
+    dates_ = date or get_dates()
 
     if device == 'dell':
         year_path = fr'C:\Users\Sergio Gil Guerrero\Documents\WonderBrands\Finanzas\{dates_[1]}'
